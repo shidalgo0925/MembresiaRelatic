@@ -1,0 +1,300 @@
+/* Paleta de colores RelaticPanama - Basada en relaticpanama.org */
+:root {
+    --primary-blue: #1e3a8a;       /* Azul principal */
+    --secondary-blue: #3b82f6;     /* Azul secundario */
+    --light-blue: #dbeafe;         /* Azul claro */
+    --dark-blue: #1e40af;          /* Azul oscuro */
+    --accent-orange: #f97316;      /* Naranja acento */
+    --success-green: #10b981;      /* Verde éxito */
+    --gray-50: #f9fafb;            /* Gris muy claro */
+    --gray-100: #f3f4f6;           /* Gris claro */
+    --gray-600: #4b5563;           /* Gris medio */
+    --gray-800: #1f2937;           /* Gris oscuro */
+    --gray-900: #111827;           /* Gris muy oscuro */
+}
+
+/* Mejoras adicionales para la aplicación */
+.hero-section {
+    background: linear-gradient(135deg, var(--primary-blue) 0%, var(--dark-blue) 100%);
+    color: white;
+    padding: 100px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    opacity: 0.3;
+    pointer-events: none; /* Ensure overlay does not block clicks on buttons */
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+}
+
+/* Botones personalizados */
+.btn-primary {
+    background-color: var(--primary-blue);
+    border-color: var(--primary-blue);
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: var(--dark-blue);
+    border-color: var(--dark-blue);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(30, 58, 138, 0.3);
+}
+
+.btn-outline-primary {
+    color: var(--primary-blue);
+    border-color: var(--primary-blue);
+    transition: all 0.3s ease;
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-blue);
+    border-color: var(--primary-blue);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(30, 58, 138, 0.3);
+}
+
+/* Tarjetas de beneficios mejoradas */
+.benefit-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid var(--light-blue);
+    border-radius: 10px;
+    overflow: hidden;
+    background: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.benefit-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 30px rgba(30, 58, 138, 0.15);
+    border-left-color: var(--primary-blue);
+}
+
+.benefit-card .card-body {
+    padding: 1.5rem;
+}
+
+/* Tarjetas de membresía */
+.membership-card {
+    border: 2px solid var(--light-blue);
+    transition: all 0.3s ease;
+    border-radius: 15px;
+    overflow: hidden;
+    background: white;
+}
+
+.membership-card:hover {
+    border-color: var(--primary-blue);
+    box-shadow: 0 15px 35px rgba(30, 58, 138, 0.1);
+    transform: translateY(-5px);
+}
+
+.membership-card.premium {
+    border-color: var(--accent-orange);
+    background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
+}
+
+    .membership-card.premium:hover {
+        border-color: var(--primary-blue);
+        box-shadow: 0 15px 35px rgba(249, 115, 22, 0.2);
+    }
+
+    .membership-card.enterprise {
+        border-color: var(--accent-orange);
+        background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
+    }
+
+    .membership-card.enterprise:hover {
+        border-color: var(--primary-blue);
+        box-shadow: 0 15px 35px rgba(249, 115, 22, 0.3);
+    }
+
+/* Headers de tarjetas */
+.card-header {
+    background: linear-gradient(135deg, var(--light-blue) 0%, var(--secondary-blue) 100%);
+    border-bottom: 1px solid var(--secondary-blue);
+    color: var(--gray-800);
+    font-weight: 600;
+}
+
+/* Badges personalizados */
+.badge.bg-primary {
+    background-color: var(--primary-blue) !important;
+}
+
+.badge.bg-success {
+    background-color: var(--success-green) !important;
+}
+
+/* Navbar personalizada */
+.navbar-dark {
+    background-color: var(--gray-900) !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    color: var(--secondary-blue) !important;
+    font-weight: bold;
+    font-size: 1.5rem;
+    transition: color 0.3s ease;
+}
+
+.navbar-brand:hover {
+    color: var(--accent-orange) !important;
+}
+
+.nav-link {
+    transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+    color: var(--accent-orange) !important;
+}
+
+/* Footer personalizado */
+.footer {
+    background: linear-gradient(135deg, var(--gray-900) 0%, var(--gray-800) 100%);
+    color: white;
+    position: relative;
+}
+
+.footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--secondary-blue) 50%, transparent 100%);
+}
+
+    /* Logo RELATIC PANAMÁ */
+    .logo-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .logo-icon {
+        position: relative;
+        animation: logoFloat 3s ease-in-out infinite;
+    }
+
+    .logo-text {
+        text-align: center;
+    }
+
+    .logo-title {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: white;
+        margin: 0;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        letter-spacing: 2px;
+    }
+
+    /* Responsive para móviles */
+    @media (max-width: 768px) {
+        .logo-title {
+            font-size: 2rem;
+            letter-spacing: 1px;
+        }
+        
+        .logo-subtitle {
+            font-size: 0.9rem;
+        }
+        
+        .logo-icon svg {
+            width: 100px;
+            height: 100px;
+        }
+    }
+
+    .logo-subtitle {
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.8);
+        margin: 0.5rem 0 0 0;
+        font-weight: 300;
+        line-height: 1.4;
+    }
+
+    @keyframes logoFloat {
+        0%, 100% {
+            transform: translateY(0px);
+        }
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+
+    /* Animaciones suaves */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in-up {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+/* Efectos de hover para iconos */
+.benefit-icon i {
+    transition: all 0.3s ease;
+}
+
+.benefit-card:hover .benefit-icon i {
+    transform: scale(1.1);
+}
+
+/* Mejoras para formularios */
+.form-control:focus {
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 0.2rem rgba(74, 124, 89, 0.25);
+}
+
+/* Alertas personalizadas */
+.alert-info {
+    background-color: rgba(168, 213, 186, 0.2);
+    border-color: var(--light-green);
+    color: var(--dark-green);
+}
+
+.alert-success {
+    background-color: rgba(127, 176, 105, 0.2);
+    border-color: var(--accent-green);
+    color: var(--dark-green);
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 60px 0;
+    }
+    
+    .benefit-card {
+        margin-bottom: 1rem;
+    }
+    
+    .membership-card {
+        margin-bottom: 1.5rem;
+    }
+}

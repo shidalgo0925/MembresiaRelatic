@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Pago Exitoso - RelaticPanama{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white text-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                        <br>¡Pago Exitoso!
+                    </h4>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-crown fa-4x text-success mb-3"></i>
+                        <h3>¡Bienvenido a RelaticPanama!</h3>
+                        <p class="lead text-muted">
+                            Tu membresía {{ payment.membership_type.title() }} ha sido activada exitosamente.
+                        </p>
+                    </div>
+
+                    <!-- Detalles del pago -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Detalles del Pago</h6>
+                                    <p><strong>Membresía:</strong> {{ payment.membership_type.title() }}</p>
+                                    <p><strong>Monto:</strong> ${{ "%.2f"|format(payment.amount / 100) }}</p>
+                                    <p><strong>Correo:</strong> 
+                                        <i class="fas fa-envelope text-primary"></i> 
+                                        {{ current_user.email }}
+                                    </p>
+                                    <p><strong>Fecha:</strong> {{ payment.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+                                    <p><strong>Estado:</strong> 
+                                        <span class="badge bg-success">Confirmado</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Próximos Pasos</h6>
+                                    <ul class="list-unstyled text-start">
+                                        <li><i class="fas fa-envelope text-primary"></i> Recibirás un email de confirmación</li>
+                                        <li><i class="fas fa-star text-warning"></i> Accede a tus beneficios</li>
+                                        <li><i class="fas fa-calendar text-info"></i> Tu membresía es válida por 1 año</li>
+                                        <li><i class="fas fa-bell text-success"></i> Te notificaremos antes del vencimiento</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Beneficios destacados -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5>Beneficios de tu Membresía {{ payment.membership_type.title() }}</h5>
+                            <div class="row">
+                                {% if payment.membership_type == 'basic' %}
+                                <div class="col-md-6">
+                                    <ul class="list-unstyled">
+                                        <li><i class="fas fa-check text-success"></i> Acceso a revistas especializadas</li>
+                                        <li><i class="fas fa-check text-success"></i> Bases de datos de investigación</li>
+                                        <li><i class="fas fa-check text-success"></i> Herramientas de investigación</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <ul class="list-unstyled">
+                                        <li><i class="fas fa-check text-success"></i> Soporte por email</li>
+                                        <li><i class="fas fa-check text-success"></i> Biblioteca digital académica</li>
+                                        <li><i class="fas fa-check text-success"></i> Acceso a webinars</li>
+                                    </ul>
+                                </div>
+                                {% else %}
+                                <div class="col-md-6">
+                                    <ul class="list-unstyled">
+                                        <li><i class="fas fa-check text-success"></i> Todo lo de Básica</li>
+                                        <li><i class="fas fa-check text-success"></i> Asesoría de publicación</li>
+                                        <li><i class="fas fa-check text-success"></i> Soporte prioritario 24/7</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <ul class="list-unstyled">
+                                        <li><i class="fas fa-check text-success"></i> Acceso a webinars exclusivos</li>
+                                        <li><i class="fas fa-check text-success"></i> Red de contactos académicos</li>
+                                        <li><i class="fas fa-check text-success"></i> Descuentos en conferencias</li>
+                                    </ul>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="d-flex gap-3 justify-content-center">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-tachometer-alt"></i> Ir al Dashboard
+                        </a>
+                        <a href="{{ url_for('benefits') }}" class="btn btn-outline-primary btn-lg">
+                            <i class="fas fa-star"></i> Ver Beneficios
+                        </a>
+                    </div>
+
+                    <!-- Información adicional -->
+                    <div class="mt-4">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>¿Necesitas ayuda?</strong> 
+                            Si tienes alguna pregunta sobre tu membresía, no dudes en contactarnos en 
+                            <a href="mailto:soporte@relaticpanama.org">soporte@relaticpanama.org</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

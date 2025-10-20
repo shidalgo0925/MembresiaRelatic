@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Formulario de Suscripción - RelaticPanama{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="display-6 mb-3">
+                <i class="fas fa-user-plus"></i> Formulario de Suscripción a RELATIC-PANAMÁ
+            </h1>
+            <p class="text-muted">MEMBRESÍA</p>
+            <p class="mb-4">Todos los campos marcados con un <span class="text-danger">*</span> son obligatorios.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <form>
+                <div class="mb-3">
+                    <label class="form-label">Email <span class="text-danger">*</span></label>
+                    <input type="email" class="form-control" placeholder="Ingrese su email" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">País <span class="text-danger">*</span></label>
+                    <select class="form-select" required>
+                        <option value="" selected>Seleccione su país</option>
+                    </select>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Cédula / DNI <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" placeholder="Ej: 8-999-999 (Panamá)" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Pasaporte / DNI</label>
+                        <input type="text" class="form-control" placeholder="Ej: A12345678 (internacional)">
+                    </div>
+                </div>
+
+                <div class="mb-3 mt-3">
+                    <label class="form-label">Afiliación (Ej: Universidad de Panamá) <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" placeholder="Ingrese su afiliación" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">ORCID (Ej: 0000-0002-1825-0097) <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" placeholder="XXXX-XXXX-XXXX-XXXX" required>
+                    <small>
+                        Si no tienes ORCID, créalo <a href="https://orcid.org/register" target="_blank" rel="noopener">aquí</a>.
+                    </small>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Primer nombre <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" placeholder="Ingrese su primer nombre" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Segundo nombre</label>
+                        <input type="text" class="form-control" placeholder="Ingrese su segundo nombre">
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-1">
+                    <div class="col-md-6">
+                        <label class="form-label">Primer apellido <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" placeholder="Ingrese su primer apellido" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Segundo apellido</label>
+                        <input type="text" class="form-control" placeholder="Ingrese su segundo apellido">
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-1">
+                    <div class="col-md-4">
+                        <label class="form-label">Edad <span class="text-danger">*</span></label>
+                        <select class="form-select" required>
+                            <option value="" selected>Selecciona una opción</option>
+                            <option>18-24</option>
+                            <option>25-34</option>
+                            <option>35-44</option>
+                            <option>45-54</option>
+                            <option>55+</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Género <span class="text-danger">*</span></label>
+                        <select class="form-select" required>
+                            <option value="" selected>Selecciona una opción</option>
+                            <option>Femenino</option>
+                            <option>Masculino</option>
+                            <option>No binario</option>
+                            <option>Prefiero no decir</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Grado académico <span class="text-danger">*</span></label>
+                        <select class="form-select" required>
+                            <option value="" selected>Selecciona una opción</option>
+                            <option>Pregrado</option>
+                            <option>Maestría</option>
+                            <option>Doctorado</option>
+                            <option>Otro</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-1">
+                    <div class="col-md-6">
+                        <label class="form-label">Actividad actual <span class="text-danger">*</span></label>
+                        <select class="form-select" required>
+                            <option value="" selected>Selecciona una opción</option>
+                            <option>Estudiante</option>
+                            <option>Docente</option>
+                            <option>Investigador/a</option>
+                            <option>Profesional</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Área de conocimiento o trabajo <span class="text-danger">*</span></label>
+                        <select class="form-select" required>
+                            <option value="" selected>Selecciona una opción</option>
+                            <option>Educación</option>
+                            <option>Tecnología</option>
+                            <option>Salud</option>
+                            <option>Ciencias Sociales</option>
+                            <option>Humanidades</option>
+                            <option>Otra</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3 mt-3">
+                    <label class="form-label">Palabras clave</label>
+                    <input type="text" class="form-control" placeholder="3 a 5 palabras separadas por comas">
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Foto tamaño carnet <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Comprobante de pago (Opcional)</label>
+                        <input type="file" class="form-control">
+                    </div>
+                </div>
+
+                <div class="alert alert-info mt-3">
+                    <strong>Precio:</strong> $30 USD
+                </div>
+
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="mailto:administracion@relaticpanama.org?subject=Pago%20con%20tarjeta%20de%20cr%C3%A9dito" class="btn btn-primary">
+                        Ir al pago
+                    </a>
+                    <a href="{{ url_for('membership') }}" class="btn btn-outline-secondary">Volver</a>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-credit-card"></i> Métodos de Pago
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">Si realiza el pago con tarjeta de crédito, por favor envíe un correo a <strong>administracion@relaticpanama.org</strong> indicando esta modalidad, para que podamos remitirle el enlace correspondiente y completar su pago.</p>
+                    <hr>
+                    <h6 class="mt-3">Banco General</h6>
+                    <p class="mb-1">Cuenta Corriente: <code>03-78-01-089981-8</code></p>
+                    <p class="mb-3">Nombre: <strong>Multi Servicios TK</strong></p>
+
+                    <h6>Yappy</h6>
+                    <p class="mb-1">Directorio: <code>@multiservicio</code></p>
+                    <p class="mb-3">Nombre: <strong>Multiservicios TK</strong></p>
+
+                    <h6>PayPal</h6>
+                    <p class="mb-1">Usuario: <code>@multiserviciostk</code></p>
+                    <p class="mb-3">Ubicación: <strong>Panamá, Panamá</strong></p>
+
+                    <h6>Interbank</h6>
+                    <p class="mb-1">Cuenta de Ahorros: <code>898-346625274-5</code></p>
+                    <p class="mb-1">CCI: <code>003-898-013466252745-43</code></p>
+                    <p class="mb-0">Titular: <strong>Poma Gonzáles Sósimo Misael</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

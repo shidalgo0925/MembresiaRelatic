@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout - RelaticPanama{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-credit-card"></i> 
+                        Completar Pago - Membresía {{ membership_type.title() }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Resumen del pedido -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Resumen del Pedido</h5>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <p><strong>Membresía:</strong> {{ membership_type.title() }}</p>
+                                    <p><strong>Duración:</strong> 1 año</p>
+                                    <p><strong>Precio:</strong> ${{ "%.2f"|format(amount / 100) }}</p>
+                                    <p><strong>Correo:</strong> 
+                                        <i class="fas fa-envelope text-primary"></i> 
+                                        {{ current_user.email }}
+                                    </p>
+                                    <hr>
+                                    <h6><strong>Total: ${{ "%.2f"|format(amount / 100) }}</strong></h6>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Beneficios Incluidos</h5>
+                            <ul class="list-unstyled">
+                                {% if membership_type == 'basic' %}
+                                <li><i class="fas fa-check text-success"></i> Acceso a revistas especializadas</li>
+                                <li><i class="fas fa-check text-success"></i> Bases de datos de investigación</li>
+                                <li><i class="fas fa-check text-success"></i> Herramientas de investigación</li>
+                                <li><i class="fas fa-check text-success"></i> Soporte por email</li>
+                                {% elif membership_type == 'premium' %}
+                                <li><i class="fas fa-check text-success"></i> Todo lo de Básica</li>
+                                <li><i class="fas fa-check text-success"></i> Asesoría de publicación</li>
+                                <li><i class="fas fa-check text-success"></i> Soporte prioritario 24/7</li>
+                                <li><i class="fas fa-check text-success"></i> Acceso a webinars exclusivos</li>
+                                <li><i class="fas fa-check text-success"></i> Red de contactos académicos</li>
+                                <li><i class="fas fa-check text-success"></i> Descuentos en conferencias</li>
+                                {% else %}
+                                <li><i class="fas fa-check text-success"></i> Todo lo de Premium</li>
+                                <li><i class="fas fa-check text-success"></i> Acceso completo a O365</li>
+                                <li><i class="fas fa-check text-success"></i> Consultoría estratégica</li>
+                                <li><i class="fas fa-check text-success"></i> Soporte dedicado</li>
+                                <li><i class="fas fa-check text-success"></i> API de integración</li>
+                                <li><i class="fas fa-check text-success"></i> Capacitaciones personalizadas</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Formulario de pago -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h5>Información de Pago</h5>
+                            <form id="payment-form">
+                                <div class="mb-3">
+                                    <label for="card-element" class="form-label">
+                                        Información de la Tarjeta
+                                    </label>
+                                    <div id="card-element" class="form-control" style="height: 40px; padding: 10px;">
+                                        <!-- Stripe Elements se insertará aquí -->
+                                    </div>
+                                    <div id="card-errors" role="alert" class="text-danger mt-2"></div>
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    <button id="submit-button" class="btn btn-primary btn-lg" type="submit">
+                                        <span id="button-text">
+                                            <i class="fas fa-lock"></i> 
+                                            Pagar ${{ "%.2f"|format(amount / 100) }}
+                                        </span>
+                                        <span id="spinner" class="spinner-border spinner-border-sm d-none" role="status">
+                                            <span class="visually-hidden">Procesando...</span>
+                                        </span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Información de seguridad -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-flask"></i>
+                                <strong>Modo Demo:</strong> 
+                                Este es un sistema de demostración. Los pagos se simulan automáticamente. 
+                                No se procesan transacciones reales.
+                            </div>
+                            <div class="alert alert-info">
+                                <i class="fas fa-shield-alt"></i>
+                                <strong>Pago Seguro:</strong> 
+                                En modo producción, tu información de pago estaría protegida con encriptación SSL y procesada de forma segura por Stripe.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stripe JavaScript -->
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+    // Configuración de Stripe
+    const stripe = Stripe('{{ stripe_publishable_key }}');
+    const elements = stripe.elements();
+    
+    // Crear elemento de tarjeta
+    const cardElement = elements.create('card', {
+        style: {
+            base: {
+                fontSize: '16px',
+                color: '#424770',
+                '::placeholder': {
+                    color: '#aab7c4',
+                },
+            },
+        },
+    });
+    
+    cardElement.mount('#card-element');
+    
+    // Manejar errores de la tarjeta
+    cardElement.on('change', function(event) {
+        const displayError = document.getElementById('card-errors');
+        if (event.error) {
+            displayError.textContent = event.error.message;
+        } else {
+            displayError.textContent = '';
+        }
+    });
+    
+    // Manejar envío del formulario
+    const form = document.getElementById('payment-form');
+    form.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        
+        const submitButton = document.getElementById('submit-button');
+        const buttonText = document.getElementById('button-text');
+        const spinner = document.getElementById('spinner');
+        
+        // Mostrar spinner
+        submitButton.disabled = true;
+        buttonText.classList.add('d-none');
+        spinner.classList.remove('d-none');
+        
+        try {
+            // Crear Payment Intent
+            const response = await fetch('/create-payment-intent', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    membership_type: '{{ membership_type }}',
+                    amount: {{ amount }}
+                }),
+            });
+            
+            const { client_secret, payment_id, demo_mode } = await response.json();
+            
+            if (demo_mode) {
+                // Modo demo - simular pago exitoso
+                setTimeout(() => {
+                    window.location.href = `/payment-success?payment_id=${payment_id}`;
+                }, 2000);
+            } else {
+                // Modo real con Stripe
+                const { error, paymentIntent } = await stripe.confirmCardPayment(client_secret, {
+                    payment_method: {
+                        card: cardElement,
+                    }
+                });
+                
+                if (error) {
+                    // Mostrar error
+                    const displayError = document.getElementById('card-errors');
+                    displayError.textContent = error.message;
+                    
+                    // Restaurar botón
+                    submitButton.disabled = false;
+                    buttonText.classList.remove('d-none');
+                    spinner.classList.add('d-none');
+                } else {
+                    // Pago exitoso
+                    window.location.href = `/payment-success?payment_id=${payment_id}`;
+                }
+            }
+        } catch (err) {
+            console.error('Error:', err);
+            const displayError = document.getElementById('card-errors');
+            displayError.textContent = 'Ocurrió un error. Por favor, intenta nuevamente.';
+            
+            // Restaurar botón
+            submitButton.disabled = false;
+            buttonText.classList.remove('d-none');
+            spinner.classList.add('d-none');
+        }
+    });
+</script>
+{% endblock %}
