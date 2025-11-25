@@ -2,7 +2,7 @@
 
 {% block title %}Membresía - RelaticPanama{% endblock %}
 
-{% block content %}
+{% block page_content %}
 <div class="container py-4">
     <div class="row">
         <div class="col-12">
@@ -63,14 +63,17 @@
                         <strong>Correo registrado:</strong> {{ current_user.email }}
                     </div>
                     <div class="d-flex gap-3 justify-content-center flex-wrap">
-                        <a href="{{ url_for('checkout', membership_type='basic') }}" class="btn btn-primary">
-                            <i class="fas fa-crown"></i> Comprar Básica ($75/año)
+                        <a href="{{ url_for('checkout', membership_type='basic') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-crown"></i> Activar Básico (Gratis)
+                        </a>
+                        <a href="{{ url_for('checkout', membership_type='pro') }}" class="btn btn-primary">
+                            <i class="fas fa-bolt"></i> Comprar Pro ($60/año)
                         </a>
                         <a href="{{ url_for('checkout', membership_type='premium') }}" class="btn btn-success">
-                            <i class="fas fa-star"></i> Comprar Premium ($150/año)
+                            <i class="fas fa-star"></i> Comprar Premium ($120/año)
                         </a>
-                        <a href="{{ url_for('checkout', membership_type='enterprise') }}" class="btn btn-warning">
-                            <i class="fas fa-building"></i> Comprar Enterprise ($300/año)
+                        <a href="{{ url_for('checkout', membership_type='deluxe') }}" class="btn btn-warning">
+                            <i class="fas fa-gem"></i> Comprar DeLuxe ($200/año)
                         </a>
                     </div>
                 </div>
@@ -88,22 +91,22 @@
     
     <div class="row g-4 justify-content-center">
         <!-- Basic Plan -->
-        <div class="col-lg-4 col-md-6">
+        <div class="col-lg-3 col-md-6">
             <div class="card membership-card h-100">
                 <div class="card-header bg-primary text-white text-center">
-                    <h4 class="mb-0">Básica</h4>
+                    <h4 class="mb-0">Básico</h4>
+                    <small>Plan Gratuito</small>
                 </div>
                 <div class="card-body text-center">
-                    <h2 class="card-title">$75<span class="fs-6 text-muted">/año</span></h2>
+                    <h2 class="card-title">$0<span class="fs-6 text-muted">/año</span></h2>
                     <ul class="list-unstyled">
-                        <li><i class="fas fa-check text-success"></i> Acceso a revistas especializadas</li>
-                        <li><i class="fas fa-check text-success"></i> Bases de datos de investigación</li>
-                        <li><i class="fas fa-check text-success"></i> Soporte por email</li>
-                        <li><i class="fas fa-check text-success"></i> Contenido exclusivo</li>
+                        <li><i class="fas fa-check text-success"></i> Acceso a boletines RELATIC</li>
+                        <li><i class="fas fa-check text-success"></i> Recursos básicos</li>
+                        <li><i class="fas fa-check text-success"></i> Invitaciones a eventos abiertos</li>
                     </ul>
                     {% if not membership %}
-                    <a href="{{ url_for('checkout', membership_type='basic') }}" class="btn btn-primary">
-                        <i class="fas fa-crown"></i> Comprar Básica
+                    <a href="{{ url_for('checkout', membership_type='basic') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-crown"></i> Activar Básico
                     </a>
                     <a href="{{ url_for('subscription_form') }}" class="btn btn-outline-primary ms-2">
                         Formulario de Suscripción ($30)
@@ -113,17 +116,41 @@
             </div>
         </div>
         
+        <!-- Pro Plan -->
+        <div class="col-lg-3 col-md-6">
+            <div class="card membership-card h-100 border-info">
+                <div class="card-header bg-info text-white text-center">
+                    <h4 class="mb-0">Pro</h4>
+                    <small>Plan Recomendado</small>
+                </div>
+                <div class="card-body text-center">
+                    <h2 class="card-title">$60<span class="fs-6 text-muted">/año</span></h2>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> Todo lo de Básico</li>
+                        <li><i class="fas fa-check text-success"></i> Acceso a revistas y bases de datos</li>
+                        <li><i class="fas fa-check text-success"></i> Soporte por email prioritario</li>
+                        <li><i class="fas fa-check text-success"></i> Certificaciones en eventos</li>
+                    </ul>
+                    {% if not membership %}
+                    <a href="{{ url_for('checkout', membership_type='pro') }}" class="btn btn-info text-white">
+                        <i class="fas fa-bolt"></i> Comprar Pro
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
         <!-- Premium Plan -->
-        <div class="col-lg-4 col-md-6">
+        <div class="col-lg-3 col-md-6">
             <div class="card membership-card h-100 border-success">
                 <div class="card-header bg-success text-white text-center">
                     <h4 class="mb-0">Premium</h4>
                     <small>Más Popular</small>
                 </div>
                 <div class="card-body text-center">
-                    <h2 class="card-title">$150<span class="fs-6 text-muted">/año</span></h2>
+                    <h2 class="card-title">$120<span class="fs-6 text-muted">/año</span></h2>
                     <ul class="list-unstyled">
-                        <li><i class="fas fa-check text-success"></i> Todo lo de Básica</li>
+                        <li><i class="fas fa-check text-success"></i> Todo lo de Pro</li>
                         <li><i class="fas fa-check text-success"></i> Asesoría de publicación</li>
                         <li><i class="fas fa-check text-success"></i> Soporte prioritario</li>
                         <li><i class="fas fa-check text-success"></i> Recursos exclusivos</li>
@@ -138,26 +165,26 @@
             </div>
         </div>
         
-        <!-- Enterprise Plan -->
-        <div class="col-lg-4 col-md-6">
-            <div class="card membership-card h-100 enterprise">
+        <!-- Deluxe Plan -->
+        <div class="col-lg-3 col-md-6">
+            <div class="card membership-card h-100 deluxe">
                 <div class="card-header bg-warning text-dark text-center">
-                    <h4 class="mb-0">Enterprise</h4>
+                    <h4 class="mb-0">DeLuxe</h4>
                     <small>Para Organizaciones</small>
                 </div>
                 <div class="card-body text-center">
-                    <h2 class="card-title">$300<span class="fs-6 text-muted">/año</span></h2>
+                    <h2 class="card-title">$200<span class="fs-6 text-muted">/año</span></h2>
                     <ul class="list-unstyled">
                         <li><i class="fas fa-check text-success"></i> Todo lo de Premium</li>
                         <li><i class="fas fa-check text-success"></i> Acceso completo a O365</li>
                         <li><i class="fas fa-check text-success"></i> Soporte 24/7</li>
-                        <li><i class="fas fa-check text-success"></i> Consultoría personalizada</li>
+                        <li><i class="fas fa-check text-success"></i> Consultoría personalizada ilimitada</li>
                         <li><i class="fas fa-check text-success"></i> Recursos premium</li>
                         <li><i class="fas fa-check text-success"></i> Descuentos en eventos</li>
                     </ul>
                     {% if not membership %}
-                    <a href="{{ url_for('checkout', membership_type='enterprise') }}" class="btn btn-warning">
-                        <i class="fas fa-building"></i> Comprar Enterprise
+                    <a href="{{ url_for('checkout', membership_type='deluxe') }}" class="btn btn-warning">
+                        <i class="fas fa-gem"></i> Comprar DeLuxe
                     </a>
                     {% endif %}
                 </div>

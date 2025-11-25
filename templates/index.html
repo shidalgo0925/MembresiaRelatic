@@ -2,7 +2,7 @@
 
 {% block title %}Relatic Panama - Inicio{% endblock %}
 
-{% block content %}
+{% block page_content %}
 <!-- Hero Section -->
 <section class="hero-section">
     <div class="container">
@@ -110,19 +110,18 @@
             </div>
         </div>
         <div class="row g-4 justify-content-center">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="card membership-card h-100">
                     <div class="card-header bg-primary text-white text-center">
-                        <h4 class="mb-0">Básica</h4>
+                        <h4 class="mb-0">Básico</h4>
+                        <small>Plan Gratuito</small>
                     </div>
                     <div class="card-body text-center">
-                        <h2 class="card-title">$75<span class="fs-6 text-muted">/año</span></h2>
+                        <h2 class="card-title">$0<span class="fs-6 text-muted">/año</span></h2>
                         <ul class="list-unstyled">
-                            <li><i class="fas fa-check text-success"></i> Acceso a revistas especializadas</li>
-                            <li><i class="fas fa-check text-success"></i> Bases de datos de investigación</li>
-                            <li><i class="fas fa-check text-success"></i> Herramientas de investigación</li>
-                            <li><i class="fas fa-check text-success"></i> Soporte por email</li>
-                            <li><i class="fas fa-check text-success"></i> Biblioteca digital básica</li>
+                            <li><i class="fas fa-check text-success"></i> Acceso a boletines RELATIC</li>
+                            <li><i class="fas fa-check text-success"></i> Recursos básicos</li>
+                            <li><i class="fas fa-check text-success"></i> Invitaciones a eventos abiertos</li>
                         </ul>
                         {% if not current_user.is_authenticated %}
                         <a href="{{ url_for('register') }}" class="btn btn-primary">Registrarse</a>
@@ -132,18 +131,40 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
+                <div class="card membership-card h-100 border-info">
+                    <div class="card-header bg-info text-white text-center">
+                        <h4 class="mb-0">Pro</h4>
+                        <small>Plan Recomendado</small>
+                    </div>
+                    <div class="card-body text-center">
+                        <h2 class="card-title">$60<span class="fs-6 text-muted">/año</span></h2>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success"></i> Todo lo de Básico</li>
+                            <li><i class="fas fa-check text-success"></i> Acceso a revistas y bases de datos</li>
+                            <li><i class="fas fa-check text-success"></i> Soporte por email prioritario</li>
+                            <li><i class="fas fa-check text-success"></i> Certificaciones en eventos</li>
+                        </ul>
+                        {% if not current_user.is_authenticated %}
+                        <a href="{{ url_for('register') }}" class="btn btn-info text-white">Registrarse</a>
+                        {% else %}
+                        <a href="{{ url_for('membership') }}" class="btn btn-info text-white">Ver Membresía</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
                 <div class="card membership-card h-100 border-primary">
                     <div class="card-header bg-success text-white text-center">
                         <h4 class="mb-0">Premium</h4>
                         <small>Más Popular</small>
                     </div>
                     <div class="card-body text-center">
-                        <h2 class="card-title">$150<span class="fs-6 text-muted">/año</span></h2>
+                        <h2 class="card-title">$120<span class="fs-6 text-muted">/año</span></h2>
                         <ul class="list-unstyled">
-                            <li><i class="fas fa-check text-success"></i> Todo lo de Básica</li>
+                            <li><i class="fas fa-check text-success"></i> Todo lo de Pro</li>
                             <li><i class="fas fa-check text-success"></i> Asesoría de publicación</li>
-                            <li><i class="fas fa-check text-success"></i> Soporte prioritario 24/7</li>
+                            <li><i class="fas fa-check text-success"></i> Soporte prioritario</li>
                             <li><i class="fas fa-check text-success"></i> Acceso a webinars exclusivos</li>
                             <li><i class="fas fa-check text-success"></i> Red de contactos académicos</li>
                             <li><i class="fas fa-check text-success"></i> Descuentos en conferencias</li>
@@ -156,14 +177,14 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="card membership-card h-100 border-warning">
                     <div class="card-header bg-warning text-dark text-center">
-                        <h4 class="mb-0">Enterprise</h4>
+                        <h4 class="mb-0">DeLuxe</h4>
                         <small>Para Instituciones</small>
                     </div>
                     <div class="card-body text-center">
-                        <h2 class="card-title">$300<span class="fs-6 text-muted">/año</span></h2>
+                        <h2 class="card-title">$200<span class="fs-6 text-muted">/año</span></h2>
                         <ul class="list-unstyled">
                             <li><i class="fas fa-check text-success"></i> Todo lo de Premium</li>
                             <li><i class="fas fa-check text-success"></i> Acceso completo a O365</li>
@@ -171,7 +192,6 @@
                             <li><i class="fas fa-check text-success"></i> Soporte dedicado</li>
                             <li><i class="fas fa-check text-success"></i> API de integración</li>
                             <li><i class="fas fa-check text-success"></i> Capacitaciones personalizadas</li>
-                            <li><i class="fas fa-check text-success"></i> Reportes personalizados</li>
                             <li><i class="fas fa-check text-success"></i> Eventos exclusivos VIP</li>
                         </ul>
                         {% if not current_user.is_authenticated %}

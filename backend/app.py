@@ -4,6 +4,7 @@ Sistema de Membresía RelaticPanama
 Backend Flask para gestión de usuarios y membresías
 """
 
+import sys
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -16,6 +17,9 @@ from flask_mail import Mail, Message
 
 # Configuración de la aplicación
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
+
+# Ensure module alias 'app' points to this instance even when running as __main__
+sys.modules.setdefault('app', sys.modules[__name__])
 app.config['SECRET_KEY'] = secrets.token_hex(16)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///relaticpanama.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -50,6 +54,7 @@ class User(UserMixin, db.Model):
     phone = db.Column(db.String(20))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
+    is_admin = db.Column(db.Boolean, default=False)  # Campo para administradores
     
     # Relación con membresías
     memberships = db.relationship('Membership', backref='user', lazy=True)
@@ -76,13 +81,17 @@ class User(UserMixin, db.Model):
 class Membership(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    membership_type = db.Column(db.String(50), nullable=False)  # 'basic', 'premium', 'enterprise'
+    membership_type = db.Column(db.String(50), nullable=False)  # 'basic', 'pro', 'premium', 'deluxe'
     start_date = db.Column(db.DateTime, default=datetime.utcnow)
     end_date = db.Column(db.DateTime, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
     payment_status = db.Column(db.String(20), default='pending')  # 'pending', 'paid', 'failed'
     amount = db.Column(db.Float, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def is_currently_active(self):
+        """Verificar si la membresía está actualmente activa"""
+        return self.is_active and datetime.utcnow() <= self.end_date
 
 class Benefit(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -118,6 +127,158 @@ class Subscription(db.Model):
     
     user = db.relationship('User', backref=db.backref('subscriptions', lazy=True))
     payment = db.relationship('Payment', backref=db.backref('subscription', uselist=False))
+    
+    def is_currently_active(self):
+        """Verificar si la suscripción está actualmente activa"""
+        return self.status == 'active' and datetime.utcnow() <= self.end_date
+    
+    @property
+    def is_active(self):
+        """Propiedad para compatibilidad con Membership"""
+        return self.is_currently_active()
+
+# Modelos de Eventos
+class Event(db.Model):
+    """Modelo para eventos/citas"""
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=False)
+    summary = db.Column(db.Text)
+    description = db.Column(db.Text)
+    category = db.Column(db.String(50), default='general')
+    format = db.Column(db.String(50), default='virtual')  # virtual, presencial, híbrido
+    tags = db.Column(db.String(500))
+    base_price = db.Column(db.Float, default=0.0)
+    currency = db.Column(db.String(3), default='USD')
+    registration_url = db.Column(db.String(500))
+    contact_email = db.Column(db.String(120))
+    contact_phone = db.Column(db.String(20))
+    location = db.Column(db.String(200))
+    country = db.Column(db.String(100))
+    is_virtual = db.Column(db.Boolean, default=False)
+    has_certificate = db.Column(db.Boolean, default=False)
+    certificate_instructions = db.Column(db.Text)
+    capacity = db.Column(db.Integer, default=0)
+    visibility = db.Column(db.String(20), default='members')  # members, public
+    publish_status = db.Column(db.String(20), default='draft')  # draft, published, archived
+    featured = db.Column(db.Boolean, default=False)
+    start_date = db.Column(db.DateTime, nullable=False)
+    end_date = db.Column(db.DateTime, nullable=False)
+    registration_deadline = db.Column(db.DateTime)
+    cover_image = db.Column(db.String(500))
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relaciones
+    images = db.relationship('EventImage', backref='event', lazy=True, cascade='all, delete-orphan')
+    discounts = db.relationship('EventDiscount', backref='event', lazy=True, cascade='all, delete-orphan')
+    creator = db.relationship('User', backref='created_events')
+    
+    def cover_url(self):
+        """Retorna la URL de la imagen de portada"""
+        if self.cover_image:
+            return self.cover_image
+        return '/static/images/default-event.jpg'
+    
+    def pricing_for_membership(self, membership_type=None):
+        """Calcula el precio final según el tipo de membresía"""
+        base_price = self.base_price or 0.0
+        discount = None
+        final_price = base_price
+        
+        if membership_type:
+            # Buscar descuento aplicable para este tipo de membresía
+            event_discount = EventDiscount.query.join(Discount).filter(
+                EventDiscount.event_id == self.id,
+                Discount.membership_tier == membership_type,
+                Discount.is_active == True
+            ).order_by(EventDiscount.priority.asc()).first()
+            
+            if event_discount:
+                discount = event_discount.discount
+                if discount.discount_type == 'percentage':
+                    final_price = base_price * (1 - discount.value / 100)
+                elif discount.discount_type == 'fixed':
+                    final_price = max(0, base_price - discount.value)
+        
+        return {
+            'base_price': base_price,
+            'final_price': final_price,
+            'discount': discount
+        }
+
+class EventImage(db.Model):
+    """Imágenes de galería para eventos"""
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
+    file_path = db.Column(db.String(500), nullable=False)
+    sort_order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Discount(db.Model):
+    """Descuentos reutilizables"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    code = db.Column(db.String(50), unique=True)
+    description = db.Column(db.Text)
+    discount_type = db.Column(db.String(20), default='percentage')  # percentage, fixed
+    value = db.Column(db.Float, nullable=False)
+    membership_tier = db.Column(db.String(50))  # basic, pro, premium, deluxe
+    category = db.Column(db.String(50), default='event')
+    applies_automatically = db.Column(db.Boolean, default=False)
+    is_active = db.Column(db.Boolean, default=True)
+    max_uses = db.Column(db.Integer)
+    start_date = db.Column(db.DateTime)
+    end_date = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relación con eventos
+    events = db.relationship('EventDiscount', backref='discount', lazy=True)
+
+class EventDiscount(db.Model):
+    """Relación muchos a muchos entre eventos y descuentos"""
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
+    discount_id = db.Column(db.Integer, db.ForeignKey('discount.id'), nullable=False)
+    priority = db.Column(db.Integer, default=1)  # Orden de aplicación si hay múltiples
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class ActivityLog(db.Model):
+    """Log de actividades administrativas"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    action = db.Column(db.String(50), nullable=False)  # create_event, update_event, etc.
+    entity_type = db.Column(db.String(50), nullable=False)  # event, discount, user, etc.
+    entity_id = db.Column(db.Integer)
+    description = db.Column(db.Text)
+    ip_address = db.Column(db.String(45))
+    user_agent = db.Column(db.String(500))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', backref='activity_logs')
+    
+    @classmethod
+    def log_activity(cls, user_id, action, entity_type, entity_id, description, request=None):
+        """Método helper para registrar actividades"""
+        log = cls(
+            user_id=user_id,
+            action=action,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            description=description,
+            ip_address=request.remote_addr if request else None,
+            user_agent=request.headers.get('User-Agent') if request else None
+        )
+        db.session.add(log)
+        return log
+
+# Función helper para validar archivos
+def allowed_file(filename):
+    """Verifica si el archivo tiene una extensión permitida"""
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Configuración del login manager
 @login_manager.user_loader
@@ -234,20 +395,53 @@ def profile():
     """Perfil del usuario"""
     return render_template('profile.html')
 
+@app.route('/services')
+@login_required
+def services():
+    """Módulo de Servicios"""
+    active_membership = current_user.get_active_membership()
+    return render_template('services.html', membership=active_membership)
+
+@app.route('/office365')
+@login_required
+def office365():
+    """Módulo de Office 365"""
+    active_membership = current_user.get_active_membership()
+    return render_template('office365.html', membership=active_membership)
+
+@app.route('/settings')
+@login_required
+def settings():
+    """Módulo de Configuración"""
+    return render_template('settings.html')
+
+@app.route('/notifications')
+@login_required
+def notifications():
+    """Módulo de Notificaciones"""
+    return render_template('notifications.html')
+
+@app.route('/help')
+@login_required
+def help():
+    """Módulo de Ayuda"""
+    return render_template('help.html')
+
 # Rutas de pago
 @app.route('/checkout/<membership_type>')
 @login_required
 def checkout(membership_type):
     """Página de checkout para pagos"""
-    if membership_type not in ['basic', 'premium', 'enterprise']:
+    if membership_type not in ['basic', 'pro', 'premium', 'deluxe']:
         flash('Tipo de membresía inválido.', 'error')
         return redirect(url_for('membership'))
     
     # Precios en centavos
     prices = {
-        'basic': 7500,      # $75.00
-        'premium': 15000,   # $150.00
-        'enterprise': 30000 # $300.00
+        'basic': 0,         # $0.00 - Plan gratuito
+        'pro': 6000,        # $60.00
+        'premium': 12000,   # $120.00
+        'deluxe': 20000     # $200.00
     }
     
     amount = prices[membership_type]
@@ -444,6 +638,67 @@ def api_user_membership():
             'payment_status': membership.payment_status
         })
     return jsonify({'error': 'No active membership found'}), 404
+
+# Rutas de administración
+def admin_required(f):
+    """Decorador para requerir permisos de administrador"""
+    from functools import wraps
+    @wraps(f)
+    @login_required
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_admin:
+            flash('No tienes permisos para acceder a esta página.', 'error')
+            return redirect(url_for('dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/admin')
+@admin_required
+def admin_dashboard():
+    """Panel de administración principal"""
+    total_users = User.query.count()
+    total_memberships = Membership.query.count()
+    active_memberships = Membership.query.filter_by(is_active=True).count()
+    total_payments = Payment.query.filter_by(status='succeeded').count()
+    total_revenue = sum([p.amount for p in Payment.query.filter_by(status='succeeded').all()]) / 100
+    
+    # Usuarios recientes
+    recent_users = User.query.order_by(User.created_at.desc()).limit(5).all()
+    
+    # Membresías recientes
+    recent_memberships = Membership.query.order_by(Membership.created_at.desc()).limit(5).all()
+    
+    return render_template('admin/dashboard.html',
+                         total_users=total_users,
+                         total_memberships=total_memberships,
+                         active_memberships=active_memberships,
+                         total_payments=total_payments,
+                         total_revenue=total_revenue,
+                         recent_users=recent_users,
+                         recent_memberships=recent_memberships)
+
+@app.route('/admin/users')
+@admin_required
+def admin_users():
+    """Gestión de usuarios"""
+    users = User.query.order_by(User.created_at.desc()).all()
+    return render_template('admin/users.html', users=users)
+
+@app.route('/admin/memberships')
+@admin_required
+def admin_memberships():
+    """Gestión de membresías"""
+    memberships = Membership.query.order_by(Membership.created_at.desc()).all()
+    return render_template('admin/memberships.html', memberships=memberships)
+
+# Registrar blueprints de eventos
+try:
+    from event_routes import events_bp, admin_events_bp, events_api_bp
+    app.register_blueprint(events_bp)
+    app.register_blueprint(admin_events_bp)
+    app.register_blueprint(events_api_bp)
+except ImportError as e:
+    print(f"Warning: No se pudieron registrar los blueprints de eventos: {e}")
 
 # Funciones de utilidad
 def create_sample_data():

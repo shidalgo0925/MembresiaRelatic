@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Office 365 - RelaticPanama{% endblock %}
+
+{% block page_content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="display-6 mb-4">
+                <i class="fab fa-microsoft"></i> Office 365
+            </h1>
+            <p class="lead text-muted">Solicita acceso a Office 365 para miembros de RELATIC PANAMÁ</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <i class="fab fa-microsoft fa-4x text-primary mb-3"></i>
+                        <h3>Solicitud de Acceso a Office 365</h3>
+                        <p class="text-muted">
+                            Como miembro activo de RELATIC PANAMÁ, puedes solicitar acceso a Office 365 
+                            para uso académico y profesional.
+                        </p>
+                    </div>
+
+                    {% if membership and membership.is_currently_active() %}
+                    <form id="office365Form">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Correo Electrónico</label>
+                            <input type="email" class="form-control" id="email" value="{{ current_user.email }}" required>
+                            <small class="text-muted">Este será el correo asociado a tu cuenta de Office 365</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="purpose" class="form-label">Propósito del Uso</label>
+                            <select class="form-select" id="purpose" required>
+                                <option value="">Selecciona un propósito</option>
+                                <option value="research">Investigación</option>
+                                <option value="teaching">Docencia</option>
+                                <option value="publication">Publicación</option>
+                                <option value="collaboration">Colaboración</option>
+                                <option value="other">Otro</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Descripción del Uso</label>
+                            <textarea class="form-control" id="description" rows="4" placeholder="Describe cómo planeas usar Office 365..." required></textarea>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Nota:</strong> La solicitud será revisada por nuestro equipo. 
+                            Recibirás una respuesta en un plazo de 2-3 días hábiles.
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-paper-plane"></i> Enviar Solicitud
+                            </button>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="alert alert-warning text-center">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                        <h5>Membresía Requerida</h5>
+                        <p>Necesitas tener una membresía activa para solicitar acceso a Office 365.</p>
+                        <a href="{{ url_for('membership') }}" class="btn btn-primary">
+                            <i class="fas fa-crown"></i> Adquirir Membresía
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Información Adicional -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body">
+                    <h5 class="mb-3"><i class="fas fa-question-circle"></i> Preguntas Frecuentes</h5>
+                    <div class="accordion" id="faqAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                    ¿Qué incluye el acceso a Office 365?
+                                </button>
+                            </h2>
+                            <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    El acceso incluye todas las aplicaciones de Office 365: Word, Excel, PowerPoint, 
+                                    Outlook, Teams, OneDrive, y más, con almacenamiento en la nube.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                    ¿Cuánto tiempo tarda la aprobación?
+                                </button>
+                            </h2>
+                            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Generalmente, las solicitudes son procesadas en un plazo de 2-3 días hábiles. 
+                                    Recibirás un correo electrónico con las instrucciones de acceso una vez aprobada.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                    ¿Es gratuito para miembros?
+                                </button>
+                            </h2>
+                            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Sí, el acceso a Office 365 es un beneficio gratuito para todos los miembros activos de RELATIC PANAMÁ.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('office365Form')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Simular envío (aquí iría la llamada AJAX real)
+    alert('Solicitud enviada exitosamente. Recibirás una respuesta en 2-3 días hábiles.');
+    this.reset();
+});
+</script>
+{% endblock %}
+
+

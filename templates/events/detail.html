@@ -1,0 +1,329 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ event.title }} - Eventos Relatic{% endblock %}
+
+{% block page_content %}
+{% set cover = event.cover_url() %}
+<section class="event-hero" {% if cover %}style="background-image: linear-gradient(120deg, rgba(15,23,42,0.9), rgba(15,23,42,0.7)), url('{{ cover }}');"{% endif %}>
+    <div class="container py-5 text-white">
+        <p class="text-uppercase mb-1" style="letter-spacing: 0.2em;">{{ event.category }}</p>
+        <h1 class="display-5 fw-bold mb-3">{{ event.title }}</h1>
+        <p class="lead text-light">{{ event.summary or event.description[:240] }}</p>
+        <div class="d-flex flex-column flex-md-row gap-3 mt-4">
+            <div><i class="far fa-calendar me-2"></i>{{ event.start_date.strftime('%d %b %Y %H:%M') }} - {{ event.end_date.strftime('%d %b %Y %H:%M') }}</div>
+            <div><i class="fas fa-location-dot me-2"></i>{{ event.location or ('Virtual' if event.is_virtual else 'Por definir') }}</div>
+            {% if event.registration_url %}
+            <div><i class="fas fa-link me-2"></i><a class="text-white text-decoration-underline" href="{{ event.registration_url }}" target="_blank">Registro oficial</a></div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="py-5" style="background: #f8fafc;">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-4">
+                        <h2 class="h4 mb-3">Descripción general</h2>
+                        <p class="text-muted mb-0" style="white-space: pre-line;">{{ event.description or 'Próximamente más detalles.' }}</p>
+                    </div>
+                </div>
+
+                {% if event.images %}
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-4">
+                        <h3 class="h5 mb-3">Galería</h3>
+                        <div class="row g-3">
+                            {% for image in event.images %}
+                            <div class="col-md-6">
+                                <div class="event-gallery-image" style="background-image: url('{{ image.file_path }}');">
+                                    {% if image.caption %}<span>{{ image.caption }}</span>{% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if event.has_certificate or event.certificate_instructions %}
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-4">
+                        <h3 class="h5 mb-3"><i class="fas fa-certificate text-primary me-2"></i>Certificados</h3>
+                        {% if event.has_certificate %}
+                        <p class="mb-0">Este evento incluye certificado digital emitido por RELATIC. Recibirás los pasos para descargarlo después de tu participación.</p>
+                        {% endif %}
+                        {% if event.certificate_instructions %}
+                        <div class="alert alert-info mt-3 mb-0">
+                            <strong>Instrucciones:</strong>
+                            <div class="mt-2" style="white-space: pre-line;">{{ event.certificate_instructions }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-4">
+                        <h3 class="h5 mb-3">Información clave</h3>
+                        <ul class="list-unstyled mb-0 event-info-list">
+                            <li>
+                                <span class="label">Formato</span>
+                                <span class="value text-capitalize">{{ event.format }}</span>
+                            </li>
+                            <li>
+                                <span class="label">Visibilidad</span>
+                                <span class="value text-capitalize">{{ event.visibility }}</span>
+                            </li>
+                            {% if event.capacity %}
+                            <li>
+                                <span class="label">Cupos</span>
+                                <span class="value">{{ event.capacity }}</span>
+                            </li>
+                            {% endif %}
+                            {% if event.contact_email %}
+                            <li>
+                                <span class="label">Contacto</span>
+                                <span class="value"><a href="mailto:{{ event.contact_email }}">{{ event.contact_email }}</a></span>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-4">
+                        <h3 class="h5 mb-3">Inversión</h3>
+                        {% if pricing.base_price and pricing.base_price > 0 %}
+                        <p class="text-muted mb-1">Tarifa base</p>
+                        <p class="h4 fw-bold">{{ pricing.base_price|round(2) }} {{ event.currency }}</p>
+                        {% if pricing.final_price < pricing.base_price %}
+                        <div class="alert alert-success">
+                            <div class="d-flex justify-content-between">
+                                <span>Precio para tu membresía</span>
+                                <strong>{{ pricing.final_price|round(2) }} {{ event.currency }}</strong>
+                            </div>
+                            {% if pricing.discount %}
+                            <small class="text-success">
+                                Descuento {{ pricing.discount.value|round(0) }}{{ '%' if pricing.discount.discount_type == 'percentage' else ' ' ~ event.currency }}
+                                {% if pricing.discount.membership_tier %} · {{ pricing.discount.membership_tier|upper }}{% endif %}
+                            </small>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info mb-0">
+                            Este evento mantiene su tarifa base para tu plan actual.
+                        </div>
+                        {% endif %}
+                        {% else %}
+                        <div class="alert alert-success mb-0">
+                            <strong>Incluido en tu membresía.</strong> Acceso sin costo adicional.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if event.discount_assignments %}
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-4">
+                        <h3 class="h5 mb-3"><i class="fas fa-percentage text-success me-2"></i>Descuentos disponibles</h3>
+                        <ul class="list-group list-group-flush">
+                            {% for assignment in event.discount_assignments %}
+                            <li class="list-group-item px-0">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong>{{ assignment.discount.name }}</strong>
+                                        {% if assignment.discount.membership_tier %}
+                                        <span class="badge bg-primary-subtle text-primary ms-2">{{ assignment.discount.membership_tier|upper }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <span class="text-success">
+                                        {% if assignment.discount.discount_type == 'percentage' %}
+                                            -{{ assignment.discount.value|round(0) }}%
+                                        {% else %}
+                                            -{{ assignment.discount.value|round(2) }} {{ event.currency }}
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                {% if assignment.discount.description %}
+                                <small class="text-muted d-block">{{ assignment.discount.description }}</small>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+{% extends 'base.html' %}
+
+{% block title %}{{ event.title }} - Eventos{% endblock %}
+
+{% block page_content %}
+{% set cover = event.cover_url() %}
+<section class="event-hero" {% if cover %}style="background-image: linear-gradient(120deg, rgba(15,23,42,0.9), rgba(15,23,42,0.7)), url('{{ cover }}');"{% endif %}>
+    <div class="container py-5 text-white">
+        <p class="text-uppercase mb-1" style="letter-spacing: 0.2em;">{{ event.category }}</p>
+        <h1 class="display-5 fw-bold mb-3">{{ event.title }}</h1>
+        <p class="lead text-light">{{ event.summary or event.description[:240] }}</p>
+        <div class="d-flex flex-column flex-md-row gap-3 mt-4">
+            <div><i class="far fa-calendar me-2"></i>{{ event.start_date.strftime('%d %b %Y %H:%M') }} - {{ event.end_date.strftime('%d %b %Y %H:%M') }}</div>
+            <div><i class="fas fa-location-dot me-2"></i>{{ event.location or ('Virtual' if event.is_virtual else 'Por definir') }}</div>
+            {% if event.registration_url %}
+            <div><i class="fas fa-link me-2"></i><a class="text-white text-decoration-underline" href="{{ event.registration_url }}" target="_blank">Registrarse</a></div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="py-5" style="background: #f8fafc;">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-4">
+                        <h2 class="h4 mb-3">Descripción general</h2>
+                        <p class="text-muted mb-0" style="white-space: pre-line;">{{ event.description or 'Próximamente más detalles.' }}</p>
+                    </div>
+                </div>
+
+                {% if event.images %}
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-4">
+                        <h3 class="h5 mb-3">Galería</h3>
+                        <div class="row g-3">
+                            {% for image in event.images %}
+                            <div class="col-md-6">
+                                <div class="event-gallery-image" style="background-image: url('{{ image.file_path }}');">
+                                    {% if image.caption %}<span>{{ image.caption }}</span>{% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if event.has_certificate or event.certificate_instructions %}
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-4">
+                        <h3 class="h5 mb-3"><i class="fas fa-certificate text-primary me-2"></i>Certificados</h3>
+                        {% if event.has_certificate %}
+                        <p class="mb-0">Este evento incluye certificado digital emitido por RELATIC. Recibirás los pasos para descargarlo después de tu participación.</p>
+                        {% endif %}
+                        {% if event.certificate_instructions %}
+                        <div class="alert alert-info mt-3 mb-0">
+                            <strong>Instrucciones:</strong>
+                            <div class="mt-2" style="white-space: pre-line;">{{ event.certificate_instructions }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-4">
+                        <h3 class="h5 mb-3">Información clave</h3>
+                        <ul class="list-unstyled mb-0 event-info-list">
+                            <li>
+                                <span class="label">Formato</span>
+                                <span class="value text-capitalize">{{ event.format }}</span>
+                            </li>
+                            <li>
+                                <span class="label">Visibilidad</span>
+                                <span class="value text-capitalize">{{ event.visibility }}</span>
+                            </li>
+                            {% if event.capacity %}
+                            <li>
+                                <span class="label">Cupos</span>
+                                <span class="value">{{ event.capacity }}</span>
+                            </li>
+                            {% endif %}
+                            {% if event.contact_email %}
+                            <li>
+                                <span class="label">Contacto</span>
+                                <span class="value"><a href="mailto:{{ event.contact_email }}">{{ event.contact_email }}</a></span>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-4">
+                        <h3 class="h5 mb-3">Inversión</h3>
+                        {% if pricing.base_price and pricing.base_price > 0 %}
+                        <p class="text-muted mb-1">Tarifa base</p>
+                        <p class="h4 fw-bold">{{ pricing.base_price|round(2) }} {{ event.currency }}</p>
+                        {% if pricing.final_price < pricing.base_price %}
+                        <div class="alert alert-success">
+                            <div class="d-flex justify-content-between">
+                                <span>Precio para tu membresía</span>
+                                <strong>{{ pricing.final_price|round(2) }} {{ event.currency }}</strong>
+                            </div>
+                            {% if pricing.discount %}
+                            <small class="text-success">
+                                Descuento {{ pricing.discount.value|round(0) }}{{ '%' if pricing.discount.discount_type == 'percentage' else ' ' ~ event.currency }}
+                                {% if pricing.discount.membership_tier %} · {{ pricing.discount.membership_tier|upper }}{% endif %}
+                            </small>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info mb-0">
+                            Este evento mantiene su tarifa base para tu plan actual.
+                        </div>
+                        {% endif %}
+                        {% else %}
+                        <div class="alert alert-success mb-0">
+                            <strong>Incluido en tu membresía.</strong> Acceso sin costo adicional.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if event.discount_assignments %}
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-4">
+                        <h3 class="h5 mb-3"><i class="fas fa-percentage text-success me-2"></i>Descuentos disponibles</h3>
+                        <ul class="list-group list-group-flush">
+                            {% for assignment in event.discount_assignments %}
+                            <li class="list-group-item px-0">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong>{{ assignment.discount.name }}</strong>
+                                        {% if assignment.discount.membership_tier %}
+                                        <span class="badge bg-primary-subtle text-primary ms-2">{{ assignment.discount.membership_tier|upper }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <span class="text-success">
+                                        {% if assignment.discount.discount_type == 'percentage' %}
+                                            -{{ assignment.discount.value|round(0) }}%
+                                        {% else %}
+                                            -{{ assignment.discount.value|round(2) }} {{ event.currency }}
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                {% if assignment.discount.description %}
+                                <small class="text-muted d-block">{{ assignment.discount.description }}</small>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+

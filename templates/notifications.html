@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Notificaciones - RelaticPanama{% endblock %}
+
+{% block page_content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="display-6 mb-0">
+                        <i class="fas fa-bell"></i> Notificaciones
+                    </h1>
+                    <p class="text-muted mb-0">Gestiona tus alertas y notificaciones</p>
+                </div>
+                <button class="btn btn-outline-primary" onclick="markAllAsRead()">
+                    <i class="fas fa-check-double"></i> Marcar todas como leídas
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <select class="form-select" id="filterType">
+                                <option value="all">Todas las notificaciones</option>
+                                <option value="event">Eventos</option>
+                                <option value="publication">Publicaciones</option>
+                                <option value="system">Sistema</option>
+                                <option value="membership">Membresía</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mt-3 mt-md-0">
+                            <select class="form-select" id="filterStatus">
+                                <option value="all">Todas</option>
+                                <option value="unread">No leídas</option>
+                                <option value="read">Leídas</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mt-3 mt-md-0">
+                            <button class="btn btn-primary w-100" onclick="filterNotifications()">
+                                <i class="fas fa-filter"></i> Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Notificaciones -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-0">
+                    <div id="notificationsList">
+                        <!-- Notificación de ejemplo -->
+                        <div class="notification-item border-bottom p-3" data-type="event" data-status="unread">
+                            <div class="d-flex align-items-start">
+                                <div class="me-3">
+                                    <div class="bg-primary rounded-circle p-2">
+                                        <i class="fas fa-calendar text-white"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">Nuevo evento disponible</h6>
+                                            <p class="text-muted mb-1 small">
+                                                Se ha publicado un nuevo curso sobre metodología cualitativa. 
+                                                Inscríbete antes del 15 de diciembre.
+                                            </p>
+                                            <small class="text-muted">
+                                                <i class="fas fa-clock"></i> Hace 2 horas
+                                            </small>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-primary">No leída</span>
+                                            <button class="btn btn-sm btn-link text-danger" onclick="deleteNotification(this)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="notification-item border-bottom p-3" data-type="publication" data-status="read">
+                            <div class="d-flex align-items-start">
+                                <div class="me-3">
+                                    <div class="bg-success rounded-circle p-2">
+                                        <i class="fas fa-file-alt text-white"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">Nueva publicación disponible</h6>
+                                            <p class="text-muted mb-1 small">
+                                                Tu artículo ha sido publicado en la revista indexada.
+                                            </p>
+                                            <small class="text-muted">
+                                                <i class="fas fa-clock"></i> Hace 1 día
+                                            </small>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-secondary">Leída</span>
+                                            <button class="btn btn-sm btn-link text-danger" onclick="deleteNotification(this)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="notification-item p-3" data-type="system" data-status="unread">
+                            <div class="d-flex align-items-start">
+                                <div class="me-3">
+                                    <div class="bg-info rounded-circle p-2">
+                                        <i class="fas fa-info-circle text-white"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">Actualización del sistema</h6>
+                                            <p class="text-muted mb-1 small">
+                                                Se han implementado nuevas funcionalidades en la plataforma.
+                                            </p>
+                                            <small class="text-muted">
+                                                <i class="fas fa-clock"></i> Hace 3 días
+                                            </small>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-primary">No leída</span>
+                                            <button class="btn btn-sm btn-link text-danger" onclick="deleteNotification(this)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mensaje cuando no hay notificaciones -->
+                    <div id="noNotifications" class="text-center p-5" style="display: none;">
+                        <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No hay notificaciones disponibles</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterNotifications() {
+    const type = document.getElementById('filterType').value;
+    const status = document.getElementById('filterStatus').value;
+    const items = document.querySelectorAll('.notification-item');
+    let visibleCount = 0;
+    
+    items.forEach(item => {
+        const itemType = item.dataset.type;
+        const itemStatus = item.dataset.status;
+        
+        const matchType = type === 'all' || itemType === type;
+        const matchStatus = status === 'all' || itemStatus === status;
+        
+        if (matchType && matchStatus) {
+            item.style.display = 'block';
+            visibleCount++;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+    
+    document.getElementById('noNotifications').style.display = visibleCount === 0 ? 'block' : 'none';
+}
+
+function markAllAsRead() {
+    const items = document.querySelectorAll('.notification-item[data-status="unread"]');
+    items.forEach(item => {
+        item.dataset.status = 'read';
+        const badge = item.querySelector('.badge');
+        if (badge) {
+            badge.className = 'badge bg-secondary';
+            badge.textContent = 'Leída';
+        }
+    });
+    alert('Todas las notificaciones han sido marcadas como leídas');
+}
+
+function deleteNotification(button) {
+    if (confirm('¿Estás seguro de que deseas eliminar esta notificación?')) {
+        button.closest('.notification-item').remove();
+        const items = document.querySelectorAll('.notification-item');
+        if (items.length === 0) {
+            document.getElementById('noNotifications').style.display = 'block';
+        }
+    }
+}
+
+// Marcar como leída al hacer clic
+document.querySelectorAll('.notification-item').forEach(item => {
+    item.addEventListener('click', function(e) {
+        if (e.target.closest('button')) return;
+        if (this.dataset.status === 'unread') {
+            this.dataset.status = 'read';
+            const badge = this.querySelector('.badge');
+            if (badge) {
+                badge.className = 'badge bg-secondary';
+                badge.textContent = 'Leída';
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+
+

@@ -5,10 +5,11 @@ Sistema completo de gestión de membresías para RelaticPanama con integración 
 ## 🚀 Características
 
 ### Sistema de Membresías
-- **3 Planes de Membresía:**
-  - **Básica**: $75/año - Acceso a revistas especializadas, bases de datos, soporte por email
-  - **Premium**: $150/año - Todo lo de Básica + asesoría de publicación, soporte prioritario
-  - **Enterprise**: $300/año - Todo lo de Premium + acceso completo a O365, soporte 24/7
+- **4 Planes de Membresía:**
+  - **Básico**: Gratis - Recursos básicos, boletines RELATIC e invitaciones abiertas
+  - **Pro**: $60/año - Todo lo de Básico + acceso a revistas/bases y certificaciones
+  - **Premium**: $120/año - Todo lo de Pro + asesoría, soporte prioritario y webinars exclusivos
+  - **DeLuxe**: $200/año - Todo lo de Premium + O365 completo, soporte 24/7 y consultoría estratégica
 
 ### Formulario de Suscripción Adicional
 - **Precio**: $30 USD

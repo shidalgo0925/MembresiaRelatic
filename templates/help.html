@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Ayuda - RelaticPanama{% endblock %}
+
+{% block page_content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="display-6 mb-4">
+                <i class="fas fa-question-circle"></i> Centro de Ayuda
+            </h1>
+            <p class="lead text-muted">Encuentra respuestas a tus preguntas y obtén soporte</p>
+        </div>
+    </div>
+
+    <!-- Búsqueda -->
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-primary text-white">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" class="form-control" placeholder="Buscar en el centro de ayuda..." id="helpSearch">
+                        <button class="btn btn-primary" type="button">Buscar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categorías -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 text-center hover-shadow">
+                <div class="card-body">
+                    <div class="bg-primary rounded-circle p-3 d-inline-block mb-3">
+                        <i class="fas fa-user fa-2x text-white"></i>
+                    </div>
+                    <h5>Cuenta y Perfil</h5>
+                    <p class="text-muted small">Gestiona tu cuenta y perfil de usuario</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 text-center hover-shadow">
+                <div class="card-body">
+                    <div class="bg-success rounded-circle p-3 d-inline-block mb-3">
+                        <i class="fas fa-crown fa-2x text-white"></i>
+                    </div>
+                    <h5>Membresía</h5>
+                    <p class="text-muted small">Información sobre membresías y pagos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 text-center hover-shadow">
+                <div class="card-body">
+                    <div class="bg-info rounded-circle p-3 d-inline-block mb-3">
+                        <i class="fas fa-star fa-2x text-white"></i>
+                    </div>
+                    <h5>Beneficios</h5>
+                    <p class="text-muted small">Cómo acceder a tus beneficios</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 text-center hover-shadow">
+                <div class="card-body">
+                    <div class="bg-warning rounded-circle p-3 d-inline-block mb-3">
+                        <i class="fas fa-cog fa-2x text-white"></i>
+                    </div>
+                    <h5>Técnico</h5>
+                    <p class="text-muted small">Soporte técnico y solución de problemas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preguntas Frecuentes -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-question-circle"></i> Preguntas Frecuentes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="faqAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                    ¿Cómo puedo adquirir una membresía?
+                                </button>
+                            </h2>
+                            <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Puedes adquirir una membresía desde la sección de "Membresía" en el menú lateral. 
+                                    Allí encontrarás los diferentes planes disponibles y podrás realizar el pago de forma segura.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                    ¿Qué beneficios incluye mi membresía?
+                                </button>
+                            </h2>
+                            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Los beneficios varían según el tipo de membresía. Puedes ver todos los beneficios 
+                                    disponibles en la sección "Beneficios" del menú lateral.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                    ¿Cómo puedo solicitar acceso a Office 365?
+                                </button>
+                            </h2>
+                            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Si tienes una membresía activa, puedes solicitar acceso a Office 365 desde la 
+                                    sección "Office 365" en el menú lateral. Completa el formulario y recibirás una 
+                                    respuesta en 2-3 días hábiles.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                    ¿Cómo puedo participar como ponente en eventos?
+                                </button>
+                            </h2>
+                            <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Como miembro activo, puedes proponer eventos o ser propuesto como ponente. 
+                                    Contacta a nuestro equipo a través de info@relaticpanama.org para más información.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                                    ¿Puedo cambiar mi plan de membresía?
+                                </button>
+                            </h2>
+                            <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Sí, puedes actualizar tu plan de membresía en cualquier momento desde la sección 
+                                    "Membresía". Los cambios se aplicarán en tu próximo ciclo de facturación.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contacto -->
+    <div class="row mt-4">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center p-5">
+                    <i class="fas fa-headset fa-3x text-primary mb-3"></i>
+                    <h4>¿No encuentras lo que buscas?</h4>
+                    <p class="text-muted mb-4">Nuestro equipo de soporte está listo para ayudarte</p>
+                    <div class="d-flex justify-content-center gap-3 flex-wrap">
+                        <a href="mailto:info@relaticpanama.org" class="btn btn-primary">
+                            <i class="fas fa-envelope"></i> Enviar Email
+                        </a>
+                        <a href="tel:+507-1234-5678" class="btn btn-outline-primary">
+                            <i class="fas fa-phone"></i> Llamar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('helpSearch')?.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        // Aquí iría la lógica de búsqueda
+        alert('Búsqueda: ' + this.value);
+    }
+});
+</script>
+{% endblock %}
+
+

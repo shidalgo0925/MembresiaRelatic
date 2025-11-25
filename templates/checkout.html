@@ -2,7 +2,7 @@
 
 {% block title %}Checkout - RelaticPanama{% endblock %}
 
-{% block content %}
+{% block page_content %}
 <div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-lg-8">
@@ -36,24 +36,28 @@
                             <h5>Beneficios Incluidos</h5>
                             <ul class="list-unstyled">
                                 {% if membership_type == 'basic' %}
-                                <li><i class="fas fa-check text-success"></i> Acceso a revistas especializadas</li>
-                                <li><i class="fas fa-check text-success"></i> Bases de datos de investigación</li>
-                                <li><i class="fas fa-check text-success"></i> Herramientas de investigación</li>
-                                <li><i class="fas fa-check text-success"></i> Soporte por email</li>
+                                <li><i class="fas fa-check text-success"></i> Acceso a boletines RELATIC</li>
+                                <li><i class="fas fa-check text-success"></i> Recursos básicos</li>
+                                <li><i class="fas fa-check text-success"></i> Invitaciones a eventos abiertos</li>
+                                {% elif membership_type == 'pro' %}
+                                <li><i class="fas fa-check text-success"></i> Todo lo de Básico</li>
+                                <li><i class="fas fa-check text-success"></i> Acceso a revistas y bases de datos</li>
+                                <li><i class="fas fa-check text-success"></i> Soporte por email prioritario</li>
+                                <li><i class="fas fa-check text-success"></i> Certificaciones en eventos</li>
                                 {% elif membership_type == 'premium' %}
-                                <li><i class="fas fa-check text-success"></i> Todo lo de Básica</li>
+                                <li><i class="fas fa-check text-success"></i> Todo lo de Pro</li>
                                 <li><i class="fas fa-check text-success"></i> Asesoría de publicación</li>
-                                <li><i class="fas fa-check text-success"></i> Soporte prioritario 24/7</li>
+                                <li><i class="fas fa-check text-success"></i> Soporte prioritario</li>
                                 <li><i class="fas fa-check text-success"></i> Acceso a webinars exclusivos</li>
                                 <li><i class="fas fa-check text-success"></i> Red de contactos académicos</li>
                                 <li><i class="fas fa-check text-success"></i> Descuentos en conferencias</li>
                                 {% else %}
                                 <li><i class="fas fa-check text-success"></i> Todo lo de Premium</li>
                                 <li><i class="fas fa-check text-success"></i> Acceso completo a O365</li>
-                                <li><i class="fas fa-check text-success"></i> Consultoría estratégica</li>
-                                <li><i class="fas fa-check text-success"></i> Soporte dedicado</li>
+                                <li><i class="fas fa-check text-success"></i> Consultoría estratégica y personalizada</li>
+                                <li><i class="fas fa-check text-success"></i> Soporte dedicado 24/7</li>
                                 <li><i class="fas fa-check text-success"></i> API de integración</li>
-                                <li><i class="fas fa-check text-success"></i> Capacitaciones personalizadas</li>
+                                <li><i class="fas fa-check text-success"></i> Capacitaciones y eventos VIP</li>
                                 {% endif %}
                             </ul>
                         </div>

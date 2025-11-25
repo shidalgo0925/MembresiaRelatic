@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Panel de Administración - RelaticPanama{% endblock %}
+
+{% block page_content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-6 mb-3">
+                <i class="fas fa-cog"></i> Panel de Administración
+            </h1>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary rounded p-3 me-3">
+                            <i class="fas fa-users text-white fa-2x"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-0">Total Usuarios</h6>
+                            <h3 class="mb-0">{{ total_users }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-success rounded p-3 me-3">
+                            <i class="fas fa-crown text-white fa-2x"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-0">Membresías Activas</h6>
+                            <h3 class="mb-0">{{ active_memberships }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-warning rounded p-3 me-3">
+                            <i class="fas fa-credit-card text-white fa-2x"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-0">Total Pagos</h6>
+                            <h3 class="mb-0">{{ total_payments }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-info rounded p-3 me-3">
+                            <i class="fas fa-dollar-sign text-white fa-2x"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-0">Ingresos Totales</h6>
+                            <h3 class="mb-0">${{ "%.2f"|format(total_revenue) }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bolt"></i> Acciones Rápidas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin_users') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-users"></i> Gestionar Usuarios
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin_memberships') }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-crown"></i> Gestionar Membresías
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-warning w-100" onclick="alert('Funcionalidad pendiente')">
+                                <i class="fas fa-file-export"></i> Exportar Reportes
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-info w-100" onclick="alert('Funcionalidad pendiente')">
+                                <i class="fas fa-chart-bar"></i> Ver Analytics
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-user-plus"></i> Usuarios Recientes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for user in recent_users %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ user.first_name }} {{ user.last_name }}</h6>
+                                <small>{{ user.created_at.strftime('%d/%m/%Y') }}</small>
+                            </div>
+                            <p class="mb-1 text-muted">{{ user.email }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-crown"></i> Membresías Recientes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for membership in recent_memberships %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ membership.user.first_name }} {{ membership.user.last_name }}</h6>
+                                <small>{{ membership.created_at.strftime('%d/%m/%Y') }}</small>
+                            </div>
+                            <p class="mb-1">
+                                <span class="badge bg-primary">{{ membership.membership_type.title() }}</span>
+                                <span class="badge bg-{{ 'success' if membership.is_active else 'danger' }}">
+                                    {{ 'Activa' if membership.is_active else 'Inactiva' }}
+                                </span>
+                            </p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
