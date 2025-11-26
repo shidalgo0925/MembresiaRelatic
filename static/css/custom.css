@@ -234,6 +234,11 @@
     background: linear-gradient(135deg, var(--gray-900) 0%, var(--gray-800) 100%);
     color: white;
     position: relative;
+    margin-top: 40px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    width: 100%;
+    clear: both;
 }
 
 .footer::before {
@@ -244,6 +249,12 @@
     right: 0;
     height: 1px;
     background: linear-gradient(90deg, transparent 0%, var(--secondary-blue) 50%, transparent 100%);
+}
+
+/* Footer dentro del right-panel se ajusta automáticamente */
+#right-panel .footer {
+    margin-left: 0;
+    width: 100%;
 }
 
     /* Logo RELATIC PANAMÁ */
@@ -359,10 +370,10 @@ body {
 
 /* Botón toggle del sidebar */
 .sidebar-toggle-btn {
-    position: fixed;
-    top: 70px;
-    left: 10px;
-    z-index: 1030;
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 1031;
     background: var(--royal-blue);
     color: #ffffff;
     border: none;
@@ -388,22 +399,14 @@ body {
     transition: transform 0.3s ease;
 }
 
-body.sidebar-collapsed .sidebar-toggle-btn {
-    left: 10px;
-}
-
-body:not(.sidebar-collapsed) .sidebar-toggle-btn {
-    left: 290px;
-}
-
 /* Left Panel - Estilo Sufee */
 aside.left-panel {
     background: #1f2937;
     height: calc(100vh - 56px);
     min-height: calc(100vh - 56px);
-    padding: 0 25px;
-    width: 280px;
-    transition: transform 0.3s ease, width 0.3s ease;
+    padding: 0 20px;
+    width: 240px;
+    transition: width 0.3s ease, padding 0.3s ease;
     position: fixed;
     left: 0;
     top: 56px;
@@ -414,7 +417,8 @@ aside.left-panel {
 }
 
 body.sidebar-collapsed aside.left-panel {
-    transform: translateX(-100%);
+    width: 70px;
+    padding: 0 10px;
 }
 
 aside.left-panel .navbar {
@@ -469,11 +473,12 @@ aside.left-panel .navbar .menu-title {
     font-family: 'Open Sans', sans-serif;
     font-size: 12px;
     font-weight: 700;
-    line-height: 40px;
-    padding: 20px 0 10px 0;
+    line-height: 30px;
+    padding: 15px 0 8px 0;
     text-transform: uppercase;
     width: 100%;
     letter-spacing: 1px;
+    margin-bottom: 5px;
 }
 
 .navbar .navbar-nav {
@@ -496,8 +501,8 @@ aside.left-panel .navbar .navbar-nav li > a {
     display: inline-block;
     font-family: 'Open Sans', sans-serif;
     font-size: 14px;
-    line-height: 30px;
-    padding: 12px 0;
+    line-height: 24px;
+    padding: 8px 0;
     position: relative;
     width: 100%;
     text-decoration: none;
@@ -521,10 +526,66 @@ aside.left-panel .navbar .navbar-nav li > a .menu-icon {
     text-align: left;
     z-index: 9;
     font-size: 16px;
+    transition: opacity 0.3s ease;
 }
 
 .navbar .navbar-nav li > a .menu-title-text {
     font-size: 14px;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* Modo canvas: ocultar texto pero mantener iconos visibles */
+body.sidebar-collapsed aside.left-panel .menu-title-text {
+    opacity: 0;
+    visibility: hidden;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    display: none;
+}
+
+body.sidebar-collapsed aside.left-panel .menu-title {
+    opacity: 0;
+    visibility: hidden;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    display: none;
+    border: none;
+}
+
+body.sidebar-collapsed aside.left-panel .navbar .navbar-nav li > a {
+    padding: 12px 0;
+    justify-content: center;
+    display: flex;
+    border-left: none;
+}
+
+body.sidebar-collapsed aside.left-panel .navbar .navbar-nav li > a .menu-icon {
+    float: none;
+    margin: 0;
+    width: auto;
+    text-align: center;
+}
+
+body.sidebar-collapsed aside.left-panel .navbar .navbar-nav li > a:hover {
+    border-left: none;
+    border-radius: 8px;
+    background-color: rgba(65, 105, 225, 0.2);
+}
+
+body.sidebar-collapsed aside.left-panel .navbar .navbar-nav > .active > a {
+    border-left: none;
+    border-radius: 8px;
+    background-color: rgba(65, 105, 225, 0.3);
+}
+
+body.sidebar-collapsed aside.left-panel .navbar .navbar-nav > .active > a .menu-icon {
+    color: var(--royal-blue) !important;
 }
 
 aside.left-panel .navbar .navbar-nav > .active > a,
@@ -542,15 +603,15 @@ aside.left-panel .navbar .navbar-nav > .active > a .menu-icon {
 
 /* Ajustes cuando el sidebar está colapsado */
 body.sidebar-collapsed #right-panel {
-    margin-left: 0;
-    width: 100%;
+    margin-left: 70px;
+    width: calc(100% - 70px);
 }
 
 #right-panel {
-    margin-left: 280px;
+    margin-left: 240px;
     margin-top: 56px;
-    transition: margin-left 0.3s ease;
-    width: calc(100% - 280px);
+    transition: margin-left 0.3s ease, width 0.3s ease;
+    width: calc(100% - 240px);
     min-height: calc(100vh - 56px);
 }
 
@@ -833,10 +894,17 @@ body.open #right-panel {
     align-items: center;
     cursor: pointer;
     transition: transform 0.2s ease;
+    color: inherit;
 }
 
 .service-icon-item:hover {
     transform: translateY(-5px);
+    text-decoration: none;
+}
+
+.service-icon-item:hover .service-icon-label {
+    color: var(--royal-blue);
+    font-weight: 600;
 }
 
 .service-icon-circle {
@@ -875,6 +943,8 @@ body.open #right-panel {
 .bg-blue { background: #3b82f6; }
 .bg-dark-blue { background: #1e3a8a; }
 .bg-brown { background: #d97706; }
+.bg-indigo { background: #6366f1; }
+.bg-cyan { background: #06b6d4; }
 
 /* Recent Section */
 .recent-section {
@@ -953,12 +1023,6 @@ body.open #right-panel {
     text-align: center;
 }
 
-/* Footer adjustments */
-.footer {
-    margin-top: 40px;
-    padding-top: 20px;
-    padding-bottom: 20px;
-}
 
 /* Scrollbar personalizado para sidebar */
 aside.left-panel::-webkit-scrollbar {
@@ -1000,18 +1064,14 @@ body:not(:has(.left-panel)) main {
 /* Responsive improvements */
 @media (max-width: 768px) {
     .sidebar-toggle-btn {
-        top: 65px;
-        left: 10px;
+        top: 10px;
+        right: 10px;
         width: 35px;
         height: 35px;
     }
     
     .sidebar-toggle-btn i {
         font-size: 16px;
-    }
-    
-    body:not(.sidebar-collapsed) .sidebar-toggle-btn {
-        left: 290px;
     }
     
     aside.left-panel {
@@ -1024,7 +1084,13 @@ body:not(:has(.left-panel)) main {
     }
     
     body.sidebar-collapsed aside.left-panel {
-        transform: translateX(-100%);
+        width: 70px;
+        padding: 0 10px;
+    }
+    
+    body.sidebar-collapsed #right-panel {
+        margin-left: 70px;
+        width: calc(100% - 70px);
     }
     
     .flash-messages-container {

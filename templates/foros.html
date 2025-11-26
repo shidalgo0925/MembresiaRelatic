@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Foros - RelaticPanama{% endblock %}
+
+{% block page_content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="display-6 mb-4">
+                <i class="fas fa-comments"></i> Foros de Discusión
+            </h1>
+            <p class="lead text-muted">Participa en foros de discusión con otros miembros de RELATIC PANAMÁ</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-comments fa-4x text-primary mb-3"></i>
+                        <h3>Foros de la Comunidad RELATIC</h3>
+                        <p class="text-muted">
+                            Únete a las discusiones académicas, comparte conocimientos y conecta con investigadores 
+                            de toda Latinoamérica.
+                        </p>
+                    </div>
+
+                    {% if membership and membership.is_currently_active() %}
+                    <div class="forums-list">
+                        <div class="forum-category mb-4">
+                            <h5 class="mb-3"><i class="fas fa-folder-open text-primary"></i> Categorías de Foros</h5>
+                            
+                            <!-- Foro 1 -->
+                            <div class="card mb-3 border-0 shadow-sm">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-2">
+                                                <i class="fas fa-graduation-cap text-primary me-2"></i>
+                                                Investigación y Metodología
+                                            </h6>
+                                            <p class="text-muted small mb-2">
+                                                Discusiones sobre metodologías de investigación cualitativa, técnicas de análisis y mejores prácticas.
+                                            </p>
+                                            <div class="d-flex gap-3 text-muted small">
+                                                <span><i class="fas fa-comments"></i> 24 temas</span>
+                                                <span><i class="fas fa-reply"></i> 156 respuestas</span>
+                                                <span><i class="fas fa-user"></i> 45 miembros</span>
+                                            </div>
+                                        </div>
+                                        <a href="#" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-arrow-right"></i> Entrar
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Foro 2 -->
+                            <div class="card mb-3 border-0 shadow-sm">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-2">
+                                                <i class="fas fa-book text-success me-2"></i>
+                                                Publicaciones y Revistas
+                                            </h6>
+                                            <p class="text-muted small mb-2">
+                                                Comparte experiencias sobre publicación académica, revisión de artículos y oportunidades de publicación.
+                                            </p>
+                                            <div class="d-flex gap-3 text-muted small">
+                                                <span><i class="fas fa-comments"></i> 18 temas</span>
+                                                <span><i class="fas fa-reply"></i> 89 respuestas</span>
+                                                <span><i class="fas fa-user"></i> 32 miembros</span>
+                                            </div>
+                                        </div>
+                                        <a href="#" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-arrow-right"></i> Entrar
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Foro 3 -->
+                            <div class="card mb-3 border-0 shadow-sm">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-2">
+                                                <i class="fas fa-users text-info me-2"></i>
+                                                Colaboración y Networking
+                                            </h6>
+                                            <p class="text-muted small mb-2">
+                                                Conecta con otros investigadores, busca colaboradores para proyectos y comparte oportunidades.
+                                            </p>
+                                            <div class="d-flex gap-3 text-muted small">
+                                                <span><i class="fas fa-comments"></i> 31 temas</span>
+                                                <span><i class="fas fa-reply"></i> 203 respuestas</span>
+                                                <span><i class="fas fa-user"></i> 67 miembros</span>
+                                            </div>
+                                        </div>
+                                        <a href="#" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-arrow-right"></i> Entrar
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Foro 4 -->
+                            <div class="card mb-3 border-0 shadow-sm">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-2">
+                                                <i class="fas fa-question-circle text-warning me-2"></i>
+                                                Preguntas y Ayuda
+                                            </h6>
+                                            <p class="text-muted small mb-2">
+                                                Haz preguntas, busca ayuda y comparte soluciones con la comunidad de RELATIC.
+                                            </p>
+                                            <div class="d-flex gap-3 text-muted small">
+                                                <span><i class="fas fa-comments"></i> 42 temas</span>
+                                                <span><i class="fas fa-reply"></i> 178 respuestas</span>
+                                                <span><i class="fas fa-user"></i> 58 miembros</span>
+                                            </div>
+                                        </div>
+                                        <a href="#" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-arrow-right"></i> Entrar
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <a href="#" class="btn btn-outline-primary">
+                                <i class="fas fa-plus"></i> Crear Nuevo Tema
+                            </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning text-center">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                        <h5>Membresía Requerida</h5>
+                        <p>Necesitas tener una membresía activa para acceder a los Foros.</p>
+                        <a href="{{ url_for('membership') }}" class="btn btn-primary">
+                            <i class="fas fa-crown"></i> Adquirir Membresía
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Información Adicional -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body">
+                    <h5 class="mb-3"><i class="fas fa-info-circle"></i> Información sobre los Foros</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Acceso exclusivo para miembros activos</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Moderación activa para mantener la calidad</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Notificaciones por email de nuevas respuestas</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Búsqueda avanzada de temas y discusiones</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

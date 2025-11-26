@@ -5,108 +5,204 @@
 {% block page_content %}
 {% block content %}
 <div class="canvas-dashboard">
-    <!-- Título Principal con Gradiente -->
-    <div class="dashboard-header text-center mb-4">
-        <h1 class="dashboard-title">
-            <span class="title-word title-word-1">¿Qué</span>
-            <span class="title-word title-word-2">aprendemos</span>
-            <span class="title-word title-word-3">hoy?</span>
-        </h1>
+    <!-- Título de Servicios -->
+    <div class="text-center mb-4">
+        <h2 class="h4 mb-0">Servicios Disponibles</h2>
+        <p class="text-muted small">Accesos directos a los servicios de RELATIC</p>
     </div>
-
-    <!-- Botones de Acción (Pills) -->
-    <div class="action-buttons d-flex justify-content-center gap-2 mb-4">
-        <button class="btn btn-pill btn-pill-active">
-            <i class="fas fa-briefcase me-2"></i>
-            Mis diseños
-        </button>
-        <button class="btn btn-pill">
-            <i class="fas fa-layer-group me-2"></i>
-            Plantillas
-        </button>
-        <button class="btn btn-pill">
-            <i class="fas fa-robot me-2"></i>
-            Relatic IA
-        </button>
-    </div>
-
-    <!-- Barra de Búsqueda -->
-    <div class="search-container mb-5">
-        <div class="search-bar">
-            <i class="fas fa-search search-icon"></i>
-            <input type="text" class="search-input" placeholder="Busca en tus diseños, carpetas y archivos subidos">
-            <i class="fas fa-filter search-filter"></i>
+    
+    <!-- Información General del Dashboard -->
+    <div class="dashboard-info-cards mb-4">
+        <div class="row g-3">
+            <!-- Bienvenida -->
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="service-icon-circle bg-primary me-3" style="width: 50px; height: 50px; font-size: 20px;">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 text-muted small">Bienvenido</h6>
+                                <h5 class="mb-0">{{ current_user.first_name }} {{ current_user.last_name }}</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Días desde inicio -->
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="service-icon-circle bg-success me-3" style="width: 50px; height: 50px; font-size: 20px;">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 text-muted small">Días activo</h6>
+                                <h5 class="mb-0">
+                                    {% if days_active is not none %}
+                                        {{ days_active }} día{% if days_active != 1 %}s{% endif %}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Días restantes -->
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="service-icon-circle {% if days_remaining is not none and days_remaining <= 30 %}bg-danger{% else %}bg-warning{% endif %} me-3" style="width: 50px; height: 50px; font-size: 20px;">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 text-muted small">Días restantes</h6>
+                                <h5 class="mb-0">
+                                    {% if days_remaining is not none %}
+                                        {% if days_remaining > 0 %}
+                                            {{ days_remaining }} día{% if days_remaining != 1 %}s{% endif %}
+                                        {% else %}
+                                            <span class="text-danger">Vencida</span>
+                                        {% endif %}
+                                    {% else %}
+                                        Sin membresía
+                                    {% endif %}
+                                </h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Iconos Circulares de Servicios -->
+    <!-- Iconos Circulares de Servicios - Accesos Directos -->
     <div class="services-icons-container mb-5">
-        <div class="services-icons-row d-flex gap-3 justify-content-center flex-wrap">
-            <div class="service-icon-item" data-service="revistas">
-                <div class="service-icon-circle bg-purple">
-                    <i class="fas fa-newspaper"></i>
+        <div class="row g-4">
+            <!-- Primera fila: Servicios Básicos -->
+            <div class="col-12">
+                <h5 class="text-muted mb-3 small text-uppercase">Servicios Básicos</h5>
+                <div class="services-icons-row d-flex gap-3 justify-content-start flex-wrap">
+                    <!-- Revistas -->
+                    <a href="https://relaticpanama.org/_journals/" target="_blank" rel="noopener noreferrer" class="service-icon-item text-decoration-none" data-service="revistas">
+                        <div class="service-icon-circle bg-purple">
+                            <i class="fas fa-newspaper"></i>
+                        </div>
+                        <span class="service-icon-label">Revistas</span>
+                    </a>
+                    <!-- Carteles -->
+                    <a href="https://relaticpanama.org/_posters/" target="_blank" rel="noopener noreferrer" class="service-icon-item text-decoration-none" data-service="carteles">
+                        <div class="service-icon-circle bg-orange">
+                            <i class="fas fa-image"></i>
+                        </div>
+                        <span class="service-icon-label">Carteles</span>
+                    </a>
+                    <!-- Libros Digitales -->
+                    <a href="https://relaticpanama.org/_books/index.php/edrp/catalog" target="_blank" rel="noopener noreferrer" class="service-icon-item text-decoration-none" data-service="libros">
+                        <div class="service-icon-circle bg-red">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <span class="service-icon-label">Libros Digitales</span>
+                    </a>
                 </div>
-                <span class="service-icon-label">Revistas</span>
             </div>
-            <div class="service-icon-item" data-service="presentaciones">
-                <div class="service-icon-circle bg-orange">
-                    <i class="fas fa-presentation"></i>
+            
+            <!-- Segunda fila: Servicios PRO -->
+            <div class="col-12">
+                <h5 class="text-muted mb-3 small text-uppercase">Servicios PRO</h5>
+                <div class="services-icons-row d-flex gap-3 justify-content-start flex-wrap">
+                    <!-- Aprendizaje Continuo -->
+                    <a href="https://dev.relatic.org/detalles-aprendizaje" target="_blank" rel="noopener noreferrer" class="service-icon-item text-decoration-none" data-service="aprendizaje">
+                        <div class="service-icon-circle bg-pink">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <span class="service-icon-label">Aprendizaje</span>
+                    </a>
+                    <!-- Propiedad Intelectual -->
+                    <a href="https://dev.relatic.org/detalles-propiedad-intelectual" target="_blank" rel="noopener noreferrer" class="service-icon-item text-decoration-none" data-service="propiedad">
+                        <div class="service-icon-circle bg-purple">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <span class="service-icon-label">Propiedad IP</span>
+                    </a>
+                    <!-- Formateo Rápido -->
+                    <a href="https://dev.relatic.org/detalles-formateo-rapido" target="_blank" rel="noopener noreferrer" class="service-icon-item text-decoration-none" data-service="formateo">
+                        <div class="service-icon-circle bg-teal">
+                            <i class="fas fa-pen-fancy"></i>
+                        </div>
+                        <span class="service-icon-label">Formateo</span>
+                    </a>
+                    <!-- Correo y Suites -->
+                    <a href="{{ url_for('services') }}#correo" class="service-icon-item text-decoration-none" data-service="correo">
+                        <div class="service-icon-circle bg-green">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <span class="service-icon-label">Correo</span>
+                    </a>
+                    <!-- Apoyo Colaborativo -->
+                    <a href="{{ url_for('services') }}#apoyo" class="service-icon-item text-decoration-none" data-service="apoyo">
+                        <div class="service-icon-circle bg-blue">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <span class="service-icon-label">Apoyo</span>
+                    </a>
+                    <!-- Difusión -->
+                    <a href="{{ url_for('services') }}#difusion" class="service-icon-item text-decoration-none" data-service="difusion">
+                        <div class="service-icon-circle bg-dark-blue">
+                            <i class="fas fa-bullhorn"></i>
+                        </div>
+                        <span class="service-icon-label">Difusión</span>
+                    </a>
+                    <!-- Foros -->
+                    <a href="{{ url_for('foros') }}" class="service-icon-item text-decoration-none" data-service="foros">
+                        <div class="service-icon-circle bg-indigo">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <span class="service-icon-label">Foros</span>
+                    </a>
+                    <!-- Grupos -->
+                    <a href="{{ url_for('grupos') }}" class="service-icon-item text-decoration-none" data-service="grupos">
+                        <div class="service-icon-circle bg-cyan">
+                            <i class="fas fa-user-friends"></i>
+                        </div>
+                        <span class="service-icon-label">Grupos</span>
+                    </a>
                 </div>
-                <span class="service-icon-label">Presentación</span>
             </div>
-            <div class="service-icon-item" data-service="redes">
-                <div class="service-icon-circle bg-red">
-                    <i class="fas fa-share-alt"></i>
+            
+            <!-- Tercera fila: Servicios Premium -->
+            <div class="col-12">
+                <h5 class="text-muted mb-3 small text-uppercase">Servicios Premium</h5>
+                <div class="services-icons-row d-flex gap-3 justify-content-start flex-wrap">
+                    <!-- Bases de Datos -->
+                    <a href="{{ url_for('services') }}#bases" class="service-icon-item text-decoration-none" data-service="bases">
+                        <div class="service-icon-circle bg-brown">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <span class="service-icon-label">Bases de Datos</span>
+                    </a>
+                    <!-- Eventos y Citas -->
+                    <a href="{{ url_for('events.list_events') }}" class="service-icon-item text-decoration-none" data-service="eventos">
+                        <div class="service-icon-circle bg-indigo">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <span class="service-icon-label">Eventos</span>
+                    </a>
+                    <!-- Ver Todos los Servicios -->
+                    <a href="{{ url_for('services') }}" class="service-icon-item text-decoration-none" data-service="todos">
+                        <div class="service-icon-circle bg-white">
+                            <i class="fas fa-th-large"></i>
+                        </div>
+                        <span class="service-icon-label">Ver Todos</span>
+                    </a>
                 </div>
-                <span class="service-icon-label">Redes</span>
-            </div>
-            <div class="service-icon-item" data-service="video">
-                <div class="service-icon-circle bg-pink">
-                    <i class="fas fa-video"></i>
-                </div>
-                <span class="service-icon-label">Vídeo</span>
-            </div>
-            <div class="service-icon-item" data-service="impresion">
-                <div class="service-icon-circle bg-purple">
-                    <i class="fas fa-print"></i>
-                </div>
-                <span class="service-icon-label">Impresión</span>
-            </div>
-            <div class="service-icon-item" data-service="documentos">
-                <div class="service-icon-circle bg-teal">
-                    <i class="fas fa-file-alt"></i>
-                </div>
-                <span class="service-icon-label">Doc</span>
-            </div>
-            <div class="service-icon-item" data-service="pizarra">
-                <div class="service-icon-circle bg-green">
-                    <i class="fas fa-chalkboard"></i>
-                </div>
-                <span class="service-icon-label">Pizarra</span>
-            </div>
-            <div class="service-icon-item" data-service="hoja-calculo">
-                <div class="service-icon-circle bg-blue">
-                    <i class="fas fa-table"></i>
-                </div>
-                <span class="service-icon-label">Hoja de cálculo</span>
-            </div>
-            <div class="service-icon-item" data-service="web">
-                <div class="service-icon-circle bg-dark-blue">
-                    <i class="fas fa-globe"></i>
-                </div>
-                <span class="service-icon-label">Web</span>
-            </div>
-            <div class="service-icon-item" data-service="foto">
-                <div class="service-icon-circle bg-brown">
-                    <i class="fas fa-images"></i>
-                </div>
-                <span class="service-icon-label">Foto</span>
-            </div>
-            <div class="service-icon-item" data-service="personalizado">
-                <div class="service-icon-circle bg-white">
-                    <i class="fas fa-user"></i>
-                </div>
-                <span class="service-icon-label">Personalizado</span>
             </div>
         </div>
     </div>

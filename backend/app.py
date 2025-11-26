@@ -214,6 +214,7 @@ class EventImage(db.Model):
     event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
     file_path = db.Column(db.String(500), nullable=False)
     sort_order = db.Column(db.Integer, default=0)
+    is_primary = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Discount(db.Model):
@@ -356,9 +357,23 @@ def dashboard():
     active_membership = current_user.get_active_membership()
     benefits = Benefit.query.filter_by(is_active=True).all()
     
+    # Calcular días desde inicio y días restantes
+    days_active = None
+    days_remaining = None
+    now = datetime.utcnow()
+    
+    if active_membership:
+        if active_membership.start_date:
+            days_active = (now - active_membership.start_date).days
+        if active_membership.end_date:
+            days_remaining = (active_membership.end_date - now).days
+    
     return render_template('dashboard.html', 
                          membership=active_membership, 
-                         benefits=benefits)
+                         benefits=benefits,
+                         days_active=days_active,
+                         days_remaining=days_remaining,
+                         now=now)
 
 @app.route('/membership')
 @login_required
@@ -408,6 +423,26 @@ def office365():
     """Módulo de Office 365"""
     active_membership = current_user.get_active_membership()
     return render_template('office365.html', membership=active_membership)
+
+@app.route('/foros')
+@login_required
+def foros():
+    """Módulo de Foros para miembros"""
+    active_membership = current_user.get_active_membership()
+    if not active_membership:
+        flash('Necesitas una membresía activa para acceder a los Foros.', 'warning')
+        return redirect(url_for('membership'))
+    return render_template('foros.html', membership=active_membership)
+
+@app.route('/grupos')
+@login_required
+def grupos():
+    """Módulo de Grupos para miembros"""
+    active_membership = current_user.get_active_membership()
+    if not active_membership:
+        flash('Necesitas una membresía activa para acceder a los Grupos.', 'warning')
+        return redirect(url_for('membership'))
+    return render_template('grupos.html', membership=active_membership)
 
 @app.route('/settings')
 @login_required

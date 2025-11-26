@@ -364,7 +364,8 @@ def create_event():
                 db.session.add(EventImage(
                     event_id=event.id,
                     file_path=path,
-                    sort_order=idx
+                    sort_order=idx,
+                    is_primary=False
                 ))
 
         selected_discounts = request.form.getlist('discount_ids')
@@ -477,7 +478,8 @@ def edit_event(event_id):
                 db.session.add(EventImage(
                     event_id=event.id,
                     file_path=path,
-                    sort_order=current_order + idx
+                    sort_order=current_order + idx,
+                    is_primary=False
                 ))
 
         EventDiscount.query.filter_by(event_id=event.id).delete()
@@ -1013,7 +1015,8 @@ def create_event():
                 db.session.add(EventImage(
                     event_id=event.id,
                     file_path=path,
-                    sort_order=idx
+                    sort_order=idx,
+                    is_primary=False
                 ))
         
         selected_discounts = request.form.getlist('discount_ids')
@@ -1126,7 +1129,8 @@ def edit_event(event_id):
                 db.session.add(EventImage(
                     event_id=event.id,
                     file_path=path,
-                    sort_order=current_order + idx
+                    sort_order=current_order + idx,
+                    is_primary=False
                 ))
         
         # Actualizar descuentos
@@ -1660,7 +1664,8 @@ def create_event():
                 db.session.add(EventImage(
                     event_id=event.id,
                     file_path=path,
-                    sort_order=idx
+                    sort_order=idx,
+                    is_primary=False
                 ))
         
         selected_discounts = request.form.getlist('discount_ids')
@@ -1687,4 +1692,257 @@ def create_event():
     
     default_start = (datetime.utcnow() + timedelta(days=7)).replace(minute=0, second=0, microsecond=0)
     default_end = default_start + timedelta(hours=2)
+    return render_template(
+        'admin/events/form.html',
+        action='create',
+        event=None,
+        discounts=discounts,
+        default_start=default_start,
+        default_end=default_end
+    )
+
+
+@admin_events_bp.route('/<int:event_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def edit_event(event_id):
+    ensure_models()
+    event = Event.query.get_or_404(event_id)
+    discounts = Discount.query.order_by(Discount.name.asc()).all()
+
+    if request.method == 'POST':
+        title = request.form.get('title', '').strip()
+        if not title:
+            flash('El título es obligatorio.', 'error')
+            return redirect(request.url)
+
+        slug = request.form.get('slug', '').strip() or _slugify(title)
+        event.slug = _unique_slug(slug, event_id=event.id)
+
+        start_date = _parse_datetime('start_date')
+        end_date = _parse_datetime('end_date')
+        if not start_date or not end_date:
+            flash('Las fechas de inicio y fin son obligatorias.', 'error')
+            return redirect(request.url)
+        if end_date <= start_date:
+            flash('La fecha de fin debe ser posterior a la fecha de inicio.', 'error')
+            return redirect(request.url)
+
+        event.title = title
+        event.summary = request.form.get('summary', '').strip()
+        event.description = request.form.get('description', '').strip()
+        event.category = request.form.get('category', 'general').strip() or 'general'
+        event.format = request.form.get('format', 'virtual').strip() or 'virtual'
+        event.tags = request.form.get('tags', '').strip()
+        event.base_price = request.form.get('base_price', type=float) or 0.0
+        event.currency = request.form.get('currency', 'USD').upper()
+        event.registration_url = request.form.get('registration_url', '').strip()
+        event.contact_email = request.form.get('contact_email', '').strip()
+        event.contact_phone = request.form.get('contact_phone', '').strip()
+        event.location = request.form.get('location', '').strip()
+        event.country = request.form.get('country', '').strip()
+        event.is_virtual = bool(request.form.get('is_virtual'))
+        event.has_certificate = bool(request.form.get('has_certificate'))
+        event.certificate_instructions = request.form.get('certificate_instructions', '').strip()
+        event.capacity = request.form.get('capacity', type=int) or 0
+        event.visibility = request.form.get('visibility', 'members')
+        event.publish_status = request.form.get('publish_status', 'draft')
+        event.featured = bool(request.form.get('featured'))
+        event.start_date = start_date
+        event.end_date = end_date
+        event.registration_deadline = _parse_datetime('registration_deadline')
+
+        if request.form.get('remove_cover'):
+            _remove_file_if_exists(event.cover_image)
+            event.cover_image = None
+
+        new_cover = _save_file(request.files.get('cover_image'), prefix='cover')
+        if new_cover:
+            _remove_file_if_exists(event.cover_image)
+            event.cover_image = new_cover
+
+        delete_ids = request.form.getlist('delete_images')
+        for image_id in delete_ids:
+            image = EventImage.query.filter_by(id=image_id, event_id=event.id).first()
+            if image:
+                _remove_file_if_exists(image.file_path)
+                db.session.delete(image)
+
+        current_order = len(event.images)
+        gallery_files = request.files.getlist('gallery_images')
+        for idx, file in enumerate(gallery_files):
+            path = _save_file(file, prefix='gallery')
+            if path:
+                db.session.add(EventImage(
+                    event_id=event.id,
+                    file_path=path,
+                    sort_order=current_order + idx,
+                    is_primary=False
+                ))
+
+        EventDiscount.query.filter_by(event_id=event.id).delete()
+        selected_discounts = request.form.getlist('discount_ids')
+        for order, discount_id in enumerate(selected_discounts, start=1):
+            discount = Discount.query.get(discount_id)
+            if discount:
+                db.session.add(EventDiscount(
+                    event_id=event.id,
+                    discount_id=discount.id,
+                    priority=order
+                ))
+
+        db.session.commit()
+        ActivityLog.log_activity(
+            current_user.id,
+            'update_event',
+            'event',
+            event.id,
+            f'Se actualizó el evento {event.title}',
+            request
+        )
+        flash('Evento actualizado correctamente.', 'success')
+        return redirect(url_for('admin_events.admin_events_index'))
+
+    return render_template(
+        'admin/events/form.html',
+        action='edit',
+        event=event,
+        discounts=discounts,
+        default_start=event.start_date,
+        default_end=event.end_date
+    )
+
+
+@admin_events_bp.route('/<int:event_id>/delete', methods=['POST'])
+@admin_required
+def delete_event(event_id):
+    ensure_models()
+    event = Event.query.get_or_404(event_id)
+    title = event.title
+    
+    _remove_file_if_exists(event.cover_image)
+    for image in event.images:
+        _remove_file_if_exists(image.file_path)
+        db.session.delete(image)
+    
+    db.session.delete(event)
+    db.session.commit()
+
+    ActivityLog.log_activity(
+        current_user.id,
+        'delete_event',
+        'event',
+        event_id,
+        f'Evento eliminado: {title}',
+        request
+    )
+    flash('Evento eliminado.', 'info')
+    return redirect(url_for('admin_events.admin_events_index'))
+
+
+# ------------------------------------------------------------------------------
+# Panel Administrativo - Descuentos
+# ------------------------------------------------------------------------------
+@admin_events_bp.route('/discounts')
+@admin_required
+def discounts_index():
+    ensure_models()
+    discounts = Discount.query.order_by(Discount.created_at.desc()).all()
+    return render_template('admin/events/discount_list.html', discounts=discounts)
+
+
+@admin_events_bp.route('/discounts/create', methods=['GET', 'POST'])
+@admin_required
+def create_discount():
+    ensure_models()
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        if not name:
+            flash('El nombre es obligatorio.', 'error')
+            return redirect(request.url)
+
+        discount = Discount(
+            name=name,
+            code=request.form.get('code', '').strip() or None,
+            description=request.form.get('description', '').strip(),
+            discount_type=request.form.get('discount_type', 'percentage'),
+            value=request.form.get('value', type=float) or 0.0,
+            membership_tier=request.form.get('membership_tier', '').strip() or None,
+            category=request.form.get('category', 'event'),
+            applies_automatically='applies_automatically' in request.form,
+            is_active='is_active' in request.form,
+            max_uses=request.form.get('max_uses', type=int),
+            start_date=_parse_datetime('start_date'),
+            end_date=_parse_datetime('end_date')
+        )
+        db.session.add(discount)
+        db.session.commit()
+
+        ActivityLog.log_activity(
+            current_user.id,
+            'create_discount',
+            'discount',
+            discount.id,
+            f'Descuento creado: {discount.name}',
+            request
+        )
+        flash('Descuento creado correctamente.', 'success')
+        return redirect(url_for('admin_events.discounts_index'))
+
+    return render_template('admin/events/discount_form.html', action='create', discount=None)
+
+
+@admin_events_bp.route('/discounts/<int:discount_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def edit_discount(discount_id):
+    ensure_models()
+    discount = Discount.query.get_or_404(discount_id)
+
+    if request.method == 'POST':
+        discount.name = request.form.get('name', '').strip()
+        discount.code = request.form.get('code', '').strip() or None
+        discount.description = request.form.get('description', '').strip()
+        discount.discount_type = request.form.get('discount_type', 'percentage')
+        discount.value = request.form.get('value', type=float) or 0.0
+        discount.membership_tier = request.form.get('membership_tier', '').strip() or None
+        discount.category = request.form.get('category', 'event')
+        discount.applies_automatically = 'applies_automatically' in request.form
+        discount.is_active = 'is_active' in request.form
+        discount.max_uses = request.form.get('max_uses', type=int)
+        discount.start_date = _parse_datetime('start_date')
+        discount.end_date = _parse_datetime('end_date')
+
+        db.session.commit()
+        ActivityLog.log_activity(
+            current_user.id,
+            'update_discount',
+            'discount',
+            discount.id,
+            f'Descuento actualizado: {discount.name}',
+            request
+        )
+        flash('Descuento actualizado correctamente.', 'success')
+        return redirect(url_for('admin_events.discounts_index'))
+
+    return render_template('admin/events/discount_form.html', action='edit', discount=discount)
+
+
+@admin_events_bp.route('/discounts/<int:discount_id>/delete', methods=['POST'])
+@admin_required
+def delete_discount(discount_id):
+    ensure_models()
+    discount = Discount.query.get_or_404(discount_id)
+    name = discount.name
+    db.session.delete(discount)
+    db.session.commit()
+
+    ActivityLog.log_activity(
+        current_user.id,
+        'delete_discount',
+        'discount',
+        discount_id,
+        f'Descuento eliminado: {name}',
+        request
+    )
+    flash('Descuento eliminado.', 'info')
+    return redirect(url_for('admin_events.discounts_index'))
 
