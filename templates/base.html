@@ -196,7 +196,13 @@
                         <li class="{% if request.blueprint == 'events' or request.endpoint == 'events.list_events' %}active{% endif %}">
                             <a href="{{ url_for('events.list_events') }}">
                                 <i class="menu-icon fa fa-calendar-alt"></i>
-                                <span class="menu-title-text">Eventos y Citas</span>
+                                <span class="menu-title-text">Eventos</span>
+                            </a>
+                        </li>
+                        <li class="{% if request.blueprint == 'appointments' %}active{% endif %}">
+                            <a href="{{ url_for('appointments.appointments_home') }}">
+                                <i class="menu-icon fa fa-calendar-check"></i>
+                                <span class="menu-title-text">Citas</span>
                             </a>
                         </li>
                         <li class="{% if request.endpoint == 'membership' %}active{% endif %}">
@@ -230,6 +236,12 @@
                             <a href="{{ url_for('admin_events.admin_events_index') }}">
                                 <i class="menu-icon fa fa-calendar-alt"></i>
                                 <span class="menu-title-text">Eventos</span>
+                            </a>
+                        </li>
+                        <li class="{% if request.blueprint == 'admin_appointments' %}active{% endif %}">
+                            <a href="{{ url_for('admin_appointments.admin_appointments_dashboard') }}">
+                                <i class="menu-icon fa fa-calendar-check"></i>
+                                <span class="menu-title-text">Citas</span>
                             </a>
                         </li>
                         {% endif %}

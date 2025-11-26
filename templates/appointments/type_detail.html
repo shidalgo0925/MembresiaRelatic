@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ appointment_type.name }} - Citas{% endblock %}
+
+{% block page_content %}
+<section class="py-5 bg-dark text-white">
+    <div class="container">
+        <a href="{{ url_for('appointments.appointments_home') }}" class="text-decoration-none text-white-50 small d-inline-flex align-items-center mb-3">
+            <i class="fas fa-arrow-left me-2"></i>Volver a servicios
+        </a>
+        <div class="row gy-4 align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <span class="badge rounded-pill" style="background: {{ appointment_type.color_tag }}; color: #fff;">
+                        {{ appointment_type.service_category or 'Servicio' }}
+                    </span>
+                    <span class="text-uppercase small">Duración: {{ appointment_type.duration_minutes }} min</span>
+                </div>
+                <h1 class="display-5 fw-bold mb-3">{{ appointment_type.name }}</h1>
+                <p class="lead mb-4">{{ appointment_type.description or 'Servicio especializado a través de asesores certificados.' }}</p>
+                <div class="d-flex flex-wrap gap-4 text-white-50">
+                    <div><i class="fas fa-video me-2"></i>{{ 'Virtual' if appointment_type.is_virtual else 'Presencial' }}</div>
+                    <div><i class="fas fa-users me-2"></i>{{ 'Grupal' if appointment_type.is_group_allowed else 'Individual' }}</div>
+                    <div><i class="fas fa-check me-2"></i>{{ 'Confirmación requerida' if appointment_type.requires_confirmation else 'Confirmación automática' }}</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-lg text-dark">
+                    <div class="card-body p-4">
+                        <p class="text-uppercase text-muted small mb-1">Tu tarifa estimada</p>
+                        {% if pricing.is_included %}
+                        <h2 class="fw-bold text-success mb-1">Incluido en tu plan</h2>
+                        <p class="text-muted small mb-0">No se generará cargo adicional al confirmar.</p>
+                        {% else %}
+                        <div class="d-flex align-items-baseline gap-2 mb-1">
+                            <h2 class="fw-bold mb-0">{{ pricing.final_price | round(2) }} {{ appointment_type.currency }}</h2>
+                            {% if pricing.discount_percentage %}
+                            <span class="badge bg-success-subtle text-success">{{ pricing.discount_percentage|round(0) }}% DTO</span>
+                            {% endif %}
+                        </div>
+                        {% if pricing.final_price != pricing.base_price %}
+                        <p class="text-muted small mb-2 text-decoration-line-through">{{ pricing.base_price | round(2) }} {{ appointment_type.currency }}</p>
+                        {% endif %}
+                        <p class="text-muted small mb-0">
+                            Se aplicará el descuento correspondiente a tu membresía al confirmar la cita.
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h3 class="h5 mb-0">Agenda disponible</h3>
+                            <span class="text-muted small">{{ slots|length }} horarios publicados</span>
+                        </div>
+                        {% if slots %}
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Hora</th>
+                                        <th>Asesor</th>
+                                        <th class="text-center">Cupos</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for slot in slots %}
+                                    <tr>
+                                        <td>{{ slot.start_datetime.strftime('%d %b %Y') }}</td>
+                                        <td>{{ slot.start_datetime.strftime('%H:%M') }} - {{ slot.end_datetime.strftime('%H:%M') }}</td>
+                                        <td>
+                                            {% if slot.advisor and slot.advisor.user %}
+                                                {{ slot.advisor.user.first_name }} {{ slot.advisor.user.last_name }}
+                                            {% else %}
+                                                Asesor asignado
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-light text-dark">{{ slot.remaining_seats() }} / {{ slot.capacity }}</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <form action="{{ url_for('appointments.book_appointment', slot_id=slot.id) }}" method="post" class="d-inline-flex gap-2">
+                                                <input type="hidden" name="notes" value="">
+                                                <button type="submit" class="btn btn-primary btn-sm" {% if membership is none %}disabled{% endif %}>
+                                                    Reservar
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info d-flex align-items-center mb-0">
+                            <i class="fas fa-info-circle me-3"></i>
+                            <div>No hay slots publicados aún. Vuelve a revisar o contacta a un asesor para solicitar disponibilidad.</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h3 class="h5 mb-3">Detalles y condiciones</h3>
+                        <ul class="list-unstyled text-muted small mb-0">
+                            <li class="mb-2"><i class="fas fa-clock text-primary me-2"></i>Las citas deben confirmarse al menos 12 horas antes.</li>
+                            <li class="mb-2"><i class="fas fa-envelope text-primary me-2"></i>Recibirás confirmaciones y recordatorios por correo.</li>
+                            <li class="mb-2"><i class="fas fa-sync text-primary me-2"></i>Puedes reprogramar o cancelar desde tu panel de citas.</li>
+                            <li><i class="fas fa-lock text-primary me-2"></i>Las sesiones virtuales generan enlaces únicos por seguridad.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <h3 class="h6 text-uppercase text-muted mb-3">Asesores disponibles</h3>
+                        {% if advisors %}
+                            {% for advisor in advisors %}
+                            <div class="d-flex align-items-start gap-3 mb-3">
+                                <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                                    <i class="fas fa-user-tie"></i>
+                                </div>
+                                <div>
+                                    <strong>{{ advisor.user.first_name }} {{ advisor.user.last_name }}</strong>
+                                    <p class="mb-1 text-muted small">{{ advisor.headline or 'Asesor RELATIC' }}</p>
+                                    <p class="mb-0 text-muted small">{{ advisor.specializations or 'Especialista en investigación cualitativa.' }}</p>
+                                </div>
+                            </div>
+                            {% if not loop.last %}
+                            <hr class="my-3">
+                            {% endif %}
+                            {% endfor %}
+                        {% else %}
+                        <p class="text-muted mb-0 small">Aún no se han asignado asesores a este servicio.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h3 class="h6 text-uppercase text-muted mb-3">Preguntas frecuentes</h3>
+                        <div class="accordion accordion-flush" id="faqAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="faqOne">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                                        ¿Cómo se confirma la cita?
+                                    </button>
+                                </h2>
+                                <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body text-muted small">
+                                        El asesor recibirá la solicitud y confirmará según su disponibilidad. Recibirás un correo con el estado actualizado.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="faqTwo">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                                        ¿Puedo invitar a otros miembros?
+                                    </button>
+                                </h2>
+                                <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body text-muted small">
+                                        Si el servicio permite modalidad grupal, podrás añadir participantes desde tu panel después de reservar.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="faqThree">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
+                                        ¿Qué ocurre si el asesor cancela?
+                                    </button>
+                                </h2>
+                                <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body text-muted small">
+                                        Se enviará un correo automático a todos los participantes con el detalle y se habilitará el reagendamiento prioritario.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+

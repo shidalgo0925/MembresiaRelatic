@@ -55,6 +55,7 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
     is_admin = db.Column(db.Boolean, default=False)  # Campo para administradores
+    is_advisor = db.Column(db.Boolean, default=False)  # Campo para asesores que atienden citas
     
     # Relación con membresías
     memberships = db.relationship('Membership', backref='user', lazy=True)
@@ -245,6 +246,212 @@ class EventDiscount(db.Model):
     discount_id = db.Column(db.Integer, db.ForeignKey('discount.id'), nullable=False)
     priority = db.Column(db.Integer, default=1)  # Orden de aplicación si hay múltiples
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# ---------------------------------------------------------------------------
+# Modelos de Citas / Appointments
+# ---------------------------------------------------------------------------
+class Advisor(db.Model):
+    """Perfil de asesores internos que atienden citas."""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, unique=True)
+    headline = db.Column(db.String(120))
+    bio = db.Column(db.Text)
+    specializations = db.Column(db.Text)
+    meeting_url = db.Column(db.String(255))
+    photo_url = db.Column(db.String(255))
+    average_response_time = db.Column(db.String(50))
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('advisor_profile', uselist=False))
+    advisor_assignments = db.relationship('AppointmentAdvisor', backref='advisor', lazy=True, cascade='all, delete-orphan')
+    availability = db.relationship('AdvisorAvailability', backref='advisor', lazy=True, cascade='all, delete-orphan')
+    slots = db.relationship('AppointmentSlot', backref='advisor', lazy=True, cascade='all, delete-orphan')
+    appointments = db.relationship('Appointment', backref='advisor_profile', lazy=True)
+
+
+class AppointmentType(db.Model):
+    """Servicios configurables que pueden reservar los miembros."""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    service_category = db.Column(db.String(100))
+    duration_minutes = db.Column(db.Integer, default=60)
+    is_group_allowed = db.Column(db.Boolean, default=False)
+    max_participants = db.Column(db.Integer, default=1)
+    base_price = db.Column(db.Float, default=0.0)
+    currency = db.Column(db.String(3), default='USD')
+    is_virtual = db.Column(db.Boolean, default=True)
+    requires_confirmation = db.Column(db.Boolean, default=True)
+    color_tag = db.Column(db.String(20), default='#0d6efd')
+    icon = db.Column(db.String(50), default='fa-calendar-check')
+    display_order = db.Column(db.Integer, default=1)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    advisor_assignments = db.relationship('AppointmentAdvisor', backref='appointment_type', lazy=True, cascade='all, delete-orphan')
+    pricing_rules = db.relationship('AppointmentPricing', backref='appointment_type', lazy=True, cascade='all, delete-orphan')
+    slots = db.relationship('AppointmentSlot', backref='appointment_type', lazy=True, cascade='all, delete-orphan')
+    appointments = db.relationship('Appointment', backref='appointment_type', lazy=True)
+
+    def duration(self):
+        return timedelta(minutes=self.duration_minutes or 60)
+
+    def pricing_for_membership(self, membership_type=None):
+        """Calcula el precio final considerando reglas por membresía."""
+        base_price = self.base_price or 0.0
+        final_price = base_price
+        discount_percentage = 0.0
+        is_included = False
+        rule = None
+
+        if membership_type:
+            rule = AppointmentPricing.query.filter_by(
+                appointment_type_id=self.id,
+                membership_type=membership_type,
+                is_active=True
+            ).first()
+
+        if rule:
+            if rule.is_included:
+                final_price = 0.0
+                is_included = True
+            elif rule.price is not None:
+                final_price = rule.price
+            elif rule.discount_percentage:
+                discount_percentage = rule.discount_percentage
+                final_price = max(0.0, base_price * (1 - discount_percentage / 100))
+
+        return {
+            'base_price': base_price,
+            'final_price': final_price,
+            'discount_percentage': discount_percentage,
+            'is_included': is_included,
+            'rule': rule
+        }
+
+
+class AppointmentAdvisor(db.Model):
+    """Asignación de asesores a tipos de cita."""
+    id = db.Column(db.Integer, primary_key=True)
+    appointment_type_id = db.Column(db.Integer, db.ForeignKey('appointment_type.id'), nullable=False)
+    advisor_id = db.Column(db.Integer, db.ForeignKey('advisor.id'), nullable=False)
+    priority = db.Column(db.Integer, default=1)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('appointment_type_id', 'advisor_id', name='uq_type_advisor'),
+    )
+
+
+class AdvisorAvailability(db.Model):
+    """Bloques semanales de disponibilidad declarados por cada asesor."""
+    id = db.Column(db.Integer, primary_key=True)
+    advisor_id = db.Column(db.Integer, db.ForeignKey('advisor.id'), nullable=False)
+    day_of_week = db.Column(db.Integer, nullable=False)  # 0 = lunes ... 6 = domingo
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    timezone = db.Column(db.String(50), default='America/Panama')
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        db.CheckConstraint('end_time > start_time', name='ck_availability_time_window'),
+    )
+
+
+class AppointmentPricing(db.Model):
+    """Reglas de precio/descuento por tipo de membresía."""
+    id = db.Column(db.Integer, primary_key=True)
+    appointment_type_id = db.Column(db.Integer, db.ForeignKey('appointment_type.id'), nullable=False)
+    membership_type = db.Column(db.String(50), nullable=False)
+    price = db.Column(db.Float)
+    discount_percentage = db.Column(db.Float, default=0.0)
+    is_included = db.Column(db.Boolean, default=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('appointment_type_id', 'membership_type', name='uq_pricing_membership'),
+    )
+
+
+class AppointmentSlot(db.Model):
+    """Slots concretos de tiempo que pueden reservar los miembros."""
+    id = db.Column(db.Integer, primary_key=True)
+    appointment_type_id = db.Column(db.Integer, db.ForeignKey('appointment_type.id'), nullable=False)
+    advisor_id = db.Column(db.Integer, db.ForeignKey('advisor.id'), nullable=False)
+    start_datetime = db.Column(db.DateTime, nullable=False)
+    end_datetime = db.Column(db.DateTime, nullable=False)
+    capacity = db.Column(db.Integer, default=1)
+    reserved_seats = db.Column(db.Integer, default=0)
+    is_available = db.Column(db.Boolean, default=True)
+    is_auto_generated = db.Column(db.Boolean, default=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    created_by_user = db.relationship('User', backref='appointment_slots_created', foreign_keys=[created_by])
+    appointment = db.relationship('Appointment', backref='slot', uselist=False)
+
+    __table_args__ = (
+        db.CheckConstraint('capacity >= 1', name='ck_slot_capacity_positive'),
+        db.CheckConstraint('end_datetime > start_datetime', name='ck_slot_time_window'),
+    )
+
+    def remaining_seats(self):
+        return max(0, (self.capacity or 1) - (self.reserved_seats or 0))
+
+
+class Appointment(db.Model):
+    """Reservas realizadas por miembros."""
+    id = db.Column(db.Integer, primary_key=True)
+    reference = db.Column(db.String(40), unique=True, default=lambda: secrets.token_hex(4).upper())
+    appointment_type_id = db.Column(db.Integer, db.ForeignKey('appointment_type.id'), nullable=False)
+    advisor_id = db.Column(db.Integer, db.ForeignKey('advisor.id'), nullable=False)
+    slot_id = db.Column(db.Integer, db.ForeignKey('appointment_slot.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    membership_type = db.Column(db.String(50))
+    is_group = db.Column(db.Boolean, default=False)
+    start_datetime = db.Column(db.DateTime, nullable=False)
+    end_datetime = db.Column(db.DateTime, nullable=False)
+    status = db.Column(db.String(20), default='pending')  # pending, confirmed, cancelled, completed
+    advisor_confirmed = db.Column(db.Boolean, default=False)
+    advisor_confirmed_at = db.Column(db.DateTime)
+    cancellation_reason = db.Column(db.Text)
+    base_price = db.Column(db.Float, default=0.0)
+    final_price = db.Column(db.Float, default=0.0)
+    discount_applied = db.Column(db.Float, default=0.0)
+    payment_status = db.Column(db.String(20), default='pending')  # pending, paid, refunded
+    user_notes = db.Column(db.Text)
+    advisor_notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = db.relationship('User', backref='appointments')
+    participants = db.relationship('AppointmentParticipant', backref='appointment', lazy=True, cascade='all, delete-orphan')
+
+    def can_user_cancel(self):
+        """Permite cancelar si faltan al menos 12 horas."""
+        return self.start_datetime - datetime.utcnow() > timedelta(hours=12)
+
+
+class AppointmentParticipant(db.Model):
+    """Participantes adicionales (para citas grupales)."""
+    id = db.Column(db.Integer, primary_key=True)
+    appointment_id = db.Column(db.Integer, db.ForeignKey('appointment.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    invited_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', foreign_keys=[user_id], backref='appointment_participations')
+    invited_by = db.relationship('User', foreign_keys=[invited_by_id], backref='appointment_invitations', lazy=True)
+
 
 class ActivityLog(db.Model):
     """Log de actividades administrativas"""
@@ -719,6 +926,45 @@ def admin_users():
     users = User.query.order_by(User.created_at.desc()).all()
     return render_template('admin/users.html', users=users)
 
+
+@app.route('/admin/users/<int:user_id>/update', methods=['POST'])
+@admin_required
+def admin_update_user(user_id):
+    """Actualizar atributos básicos del usuario (admin, asesor, estado)."""
+    user = User.query.get_or_404(user_id)
+    first_name = request.form.get('first_name', '').strip()
+    last_name = request.form.get('last_name', '').strip()
+    phone = request.form.get('phone', '').strip()
+
+    if first_name:
+        user.first_name = first_name
+    if last_name:
+        user.last_name = last_name
+    user.phone = phone or None
+
+    user.is_active = bool(request.form.get('is_active'))
+    user.is_admin = bool(request.form.get('is_admin'))
+    wants_advisor = bool(request.form.get('is_advisor'))
+
+    if wants_advisor and not user.is_advisor:
+        user.is_advisor = True
+        if not user.advisor_profile:
+            new_profile = Advisor(
+                user_id=user.id,
+                headline=request.form.get('advisor_headline', '').strip() or 'Asesor RELATIC',
+                specializations=request.form.get('advisor_specializations', '').strip(),
+                meeting_url=request.form.get('advisor_meeting_url', '').strip(),
+            )
+            db.session.add(new_profile)
+    elif not wants_advisor and user.is_advisor:
+        user.is_advisor = False
+        if user.advisor_profile:
+            db.session.delete(user.advisor_profile)
+
+    db.session.commit()
+    flash('Usuario actualizado correctamente.', 'success')
+    return redirect(url_for('admin_users'))
+
 @app.route('/admin/memberships')
 @admin_required
 def admin_memberships():
@@ -734,6 +980,15 @@ try:
     app.register_blueprint(events_api_bp)
 except ImportError as e:
     print(f"Warning: No se pudieron registrar los blueprints de eventos: {e}")
+
+# Registrar blueprints de citas/appointments
+try:
+    from appointment_routes import appointments_bp, admin_appointments_bp, appointments_api_bp
+    app.register_blueprint(appointments_bp)
+    app.register_blueprint(admin_appointments_bp)
+    app.register_blueprint(appointments_api_bp)
+except ImportError as e:
+    print(f"Warning: No se pudieron registrar los blueprints de citas: {e}")
 
 # Funciones de utilidad
 def create_sample_data():

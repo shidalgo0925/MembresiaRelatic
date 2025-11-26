@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block title %}Citas y asesorías - RELATIC{% endblock %}
+
+{% block page_content %}
+<section class="py-5 bg-light" id="section-servicios">
+    <div class="container">
+        <div class="row align-items-center gy-4">
+            <div class="col-lg-7">
+                <p class="text-uppercase text-primary fw-bold small mb-2">Agenda tu tiempo</p>
+                <h1 class="fw-bold mb-3">Citas y asesorías personalizadas</h1>
+                <p class="text-muted mb-4">
+                    Reserva espacios con nuestros asesores para revisar artículos, publicaciones, consultorías u otros
+                    servicios especializados. Los beneficios y descuentos dependen del tipo de membresía activa.
+                </p>
+                <ul class="list-unstyled mb-4 text-muted">
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Slots en vivo según disponibilidad de cada asesor</li>
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Confirmación y recordatorios automáticos</li>
+                    <li><i class="fas fa-check-circle text-success me-2"></i>Descuentos aplicados automáticamente a tu membresía</li>
+                </ul>
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="#appointment-types" class="btn btn-primary btn-lg px-4">Explorar servicios</a>
+                    <a href="{{ url_for('events.list_events') }}" class="btn btn-outline-primary btn-lg px-4">Ver eventos y congresos</a>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-4">
+                        <h5 class="mb-3">Mi estado</h5>
+                        {% if membership %}
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center me-3" style="width:48px;height:48px;">
+                                <i class="fas fa-id-badge"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 text-muted small">Membresía actual</p>
+                                <h6 class="mb-0 text-uppercase">{{ membership.membership_type }}</h6>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-0">
+                            Tus citas gozarán de condiciones preferenciales y recordatorios automáticos.
+                        </p>
+                        {% else %}
+                        <p class="text-muted mb-3">
+                            No detectamos una membresía activa. Podrás ver la agenda disponible, pero necesitarás un plan para confirmar las reservas.
+                        </p>
+                        <a href="{{ url_for('membership') }}" class="btn btn-outline-primary btn-sm">Ver planes disponibles</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5" id="appointment-types">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div>
+                <p class="text-uppercase text-primary fw-bold small mb-1">Servicios disponibles</p>
+                <h2 class="h3 mb-0">Selecciona el tipo de cita</h2>
+            </div>
+            <form class="d-flex gap-2" method="get">
+                <input type="search" name="q" class="form-control form-control-sm" placeholder="Buscar por tema o categoría">
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Buscar</button>
+            </form>
+        </div>
+
+        <div class="row g-4">
+            {% for appointment_type, pricing in types_with_pricing %}
+            <div class="col-md-6 col-xl-4">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <span class="badge rounded-pill text-uppercase" style="background: {{ appointment_type.color_tag }}20; color: {{ appointment_type.color_tag }};">
+                                    {{ appointment_type.service_category or 'Servicio' }}
+                                </span>
+                                <h3 class="h5 fw-bold mt-2">{{ appointment_type.name }}</h3>
+                            </div>
+                            <div class="icon-circle bg-primary bg-opacity-10 text-primary">
+                                <i class="fas {{ appointment_type.icon }}"></i>
+                            </div>
+                        </div>
+                        <p class="text-muted small">{{ appointment_type.description or 'Servicio especializado de asesoría.' }}</p>
+
+                        <div class="d-flex flex-column gap-1 small text-muted mb-3">
+                            <span><i class="fas fa-clock me-2 text-primary"></i>{{ appointment_type.duration_minutes }} minutos</span>
+                            <span><i class="fas fa-users me-2 text-primary"></i>{{ 'Hasta ' ~ appointment_type.max_participants ~ ' participantes' if appointment_type.is_group_allowed else 'Cita individual' }}</span>
+                            <span><i class="fas fa-video me-2 text-primary"></i>{{ 'Virtual' if appointment_type.is_virtual else 'Presencial' }}</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            {% if pricing.is_included %}
+                                <div>
+                                    <small class="text-muted text-uppercase">Incluido en tu plan</small>
+                                    <h4 class="h5 mb-0 text-success">Sin costo</h4>
+                                </div>
+                            {% else %}
+                                <div>
+                                    <small class="text-muted text-uppercase">Para tu membresía</small>
+                                    <div class="d-flex align-items-baseline gap-2">
+                                        <h4 class="h5 mb-0 text-dark">{{ pricing.final_price | round(2) }} {{ appointment_type.currency }}</h4>
+                                        {% if pricing.discount_percentage %}
+                                        <span class="badge bg-success-subtle text-success">{{ pricing.discount_percentage|round(0) }}% off</span>
+                                        {% endif %}
+                                    </div>
+                                    {% if pricing.final_price != pricing.base_price %}
+                                    <small class="text-muted text-decoration-line-through">{{ pricing.base_price | round(2) }} {{ appointment_type.currency }}</small>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            <a href="{{ url_for('appointments.appointment_type_detail', type_id=appointment_type.id) }}" class="btn btn-outline-primary">
+                                Ver detalles
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-12">
+                <div class="alert alert-info d-flex align-items-center">
+                    <i class="fas fa-info-circle me-3"></i>
+                    <div>No hay servicios de citas activos actualmente. Vuelve pronto.</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h3 class="h5 mb-0">Mis próximas citas</h3>
+                            <span class="text-muted small">{{ upcoming_appointments|length }} programadas</span>
+                        </div>
+                        {% if upcoming_appointments %}
+                        <div class="list-group list-group-flush">
+                            {% for appointment in upcoming_appointments %}
+                            <div class="list-group-item px-0 d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ appointment.appointment_type.name }}</h6>
+                                    <p class="text-muted small mb-1">
+                                        <i class="far fa-calendar me-1"></i>{{ appointment.start_datetime.strftime('%d %b %Y %H:%M') }}
+                                        &middot; {{ appointment.advisor_profile.user.first_name if appointment.advisor_profile }} {{ appointment.advisor_profile.user.last_name if appointment.advisor_profile }}
+                                    </p>
+                                    <span class="badge bg-light text-dark text-uppercase">{{ appointment.status }}</span>
+                                </div>
+                                <div class="text-end">
+                                    {% if appointment.can_user_cancel() %}
+                                    <form action="{{ url_for('appointments.cancel_appointment', appointment_id=appointment.id) }}" method="post" class="d-inline">
+                                        <button class="btn btn-sm btn-outline-danger" type="submit" onclick="return confirm('¿Cancelar esta cita?');">Cancelar</button>
+                                    </form>
+                                    {% endif %}
+                                    <a href="{{ url_for('appointments.appointment_type_detail', type_id=appointment.appointment_type_id) }}" class="btn btn-sm btn-primary mt-2">Ver detalles</a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted mb-0">Aún no tienes citas programadas. Empieza reservando un servicio.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-4">
+                        <h3 class="h5 mb-3">Historial reciente</h3>
+                        {% if past_appointments %}
+                        <ul class="list-unstyled mb-0">
+                            {% for appointment in past_appointments %}
+                            <li class="mb-3 pb-3 border-bottom">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong>{{ appointment.appointment_type.name }}</strong>
+                                        <p class="text-muted small mb-0">{{ appointment.start_datetime.strftime('%d %b %Y %H:%M') }}</p>
+                                    </div>
+                                    <span class="badge bg-secondary text-uppercase">{{ appointment.status }}</span>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted mb-0">Cuando concluyas una cita aparecerá en este resumen.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
