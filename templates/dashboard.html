@@ -163,14 +163,20 @@
                         <h5 class="card-title mb-0">
                             <i class="fas fa-fire me-2 text-danger"></i>Contenidos Destacados
                         </h5>
-                        <div class="btn-group btn-group-sm" role="group">
-                            <button type="button" class="btn btn-outline-secondary active">Nuevo</button>
-                            <button type="button" class="btn btn-outline-secondary">Popular</button>
-                            <button type="button" class="btn btn-outline-secondary">Recomendado</button>
+                        <div class="btn-group btn-group-sm" role="group" id="contentFilterGroup">
+                            <button type="button" class="btn btn-outline-primary active content-filter-btn" data-filter="nuevo">
+                                <i class="fas fa-sparkles me-1"></i>Nuevo
+                            </button>
+                            <button type="button" class="btn btn-outline-primary content-filter-btn" data-filter="popular">
+                                <i class="fas fa-fire me-1"></i>Popular
+                            </button>
+                            <button type="button" class="btn btn-outline-primary content-filter-btn" data-filter="recomendado">
+                                <i class="fas fa-star me-1"></i>Recomendado
+                            </button>
                         </div>
                     </div>
-                    <div class="row g-3">
-                        <div class="col-md-6">
+                    <div class="row g-3" id="contentCards">
+                        <div class="col-md-6 content-item" data-category="nuevo">
                             <div class="content-card">
                                 <div class="content-badge bg-danger">Nuevo</div>
                                 <div class="content-icon bg-purple">
@@ -181,7 +187,7 @@
                                 <a href="https://relaticpanama.org/_journals/" target="_blank" class="btn btn-sm btn-outline-primary">Acceder</a>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6 content-item" data-category="popular">
                             <div class="content-card">
                                 <div class="content-badge bg-success">Popular</div>
                                 <div class="content-icon bg-green">
@@ -192,7 +198,7 @@
                                 <a href="https://dev.relatic.org/detalles-aprendizaje" target="_blank" class="btn btn-sm btn-outline-success">Explorar</a>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6 content-item" data-category="recomendado">
                             <div class="content-card">
                                 <div class="content-badge bg-info">Recomendado</div>
                                 <div class="content-icon bg-blue">
@@ -203,7 +209,7 @@
                                 <a href="https://relaticpanama.org/_books/index.php/edrp/catalog" target="_blank" class="btn btn-sm btn-outline-info">Ver catálogo</a>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6 content-item" data-category="popular">
                             <div class="content-card">
                                 <div class="content-badge bg-warning">Destacado</div>
                                 <div class="content-icon bg-orange">
@@ -217,6 +223,33 @@
                     </div>
                 </div>
             </div>
+
+<script>
+// Filtro de contenido destacado
+document.addEventListener('DOMContentLoaded', function() {
+    const filterBtns = document.querySelectorAll('.content-filter-btn');
+    const contentItems = document.querySelectorAll('.content-item');
+    
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const filter = this.dataset.filter;
+            
+            // Actualizar botones activos
+            filterBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Filtrar contenido
+            contentItems.forEach(item => {
+                if (filter === 'all' || item.dataset.category === filter) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    });
+});
+</script>
 
             <!-- Calendario / Agenda del Miembro -->
             <div class="card border-0 shadow-sm mb-4">
@@ -926,5 +959,120 @@
         font-size: 10px;
     }
 }
+
+/* Preview Cards */
+.preview-card {
+    transition: all 0.3s ease;
+}
+
+.preview-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.preview-icon {
+    transition: transform 0.3s ease;
+}
+
+.preview-card:hover .preview-icon {
+    transform: scale(1.1);
+}
+
+.dashboard-preview {
+    border: 2px dashed #dee2e6;
+}
+
+.preview-item {
+    transition: all 0.3s ease;
+}
+
+.preview-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
 </style>
+
+<!-- Modal de Onboarding para Nuevos Usuarios -->
+{% if show_onboarding %}
+<div class="modal fade show" id="onboardingModal" tabindex="-1" aria-labelledby="onboardingModalLabel" aria-hidden="false" style="display: block;" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="onboardingModalLabel">
+                    <i class="fas fa-rocket me-2"></i>¡Bienvenido a RELATIC Panamá!
+                </h5>
+            </div>
+            <div class="modal-body p-4">
+                <div class="text-center mb-4">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                        <i class="fas fa-check fa-2x"></i>
+                    </div>
+                    <h4>Tu cuenta ha sido creada exitosamente</h4>
+                    <p class="text-muted">Te guiaremos por los primeros pasos</p>
+                </div>
+                
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="text-center p-3 border rounded">
+                            <i class="fas fa-crown fa-2x text-warning mb-2"></i>
+                            <h6 class="mb-2">1. Elige tu Plan</h6>
+                            <p class="text-muted small mb-0">Selecciona la membresía que mejor se adapte a tus necesidades</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center p-3 border rounded">
+                            <i class="fas fa-book-open fa-2x text-primary mb-2"></i>
+                            <h6 class="mb-2">2. Explora Contenido</h6>
+                            <p class="text-muted small mb-0">Accede a revistas, cursos, bases de datos y recursos exclusivos</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center p-3 border rounded">
+                            <i class="fas fa-users fa-2x text-success mb-2"></i>
+                            <h6 class="mb-2">3. Únete a la Comunidad</h6>
+                            <p class="text-muted small mb-0">Participa en foros, eventos y conecta con investigadores</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Tip:</strong> Desde este dashboard puedes acceder rápidamente a todos los servicios. 
+                    Usa las tarjetas de acción rápida para navegar fácilmente.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="startOnboardingBtn">
+                    <i class="fas fa-arrow-right me-2"></i>Empezar ahora
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-backdrop fade show" id="onboardingBackdrop"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const onboardingModal = document.getElementById('onboardingModal');
+    const startBtn = document.getElementById('startOnboardingBtn');
+    
+    if (startBtn) {
+        startBtn.addEventListener('click', function() {
+            // Marcar onboarding como visto
+            fetch('{{ url_for("mark_onboarding_seen") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            }).then(() => {
+                // Cerrar modal
+                const backdrop = document.getElementById('onboardingBackdrop');
+                if (onboardingModal) onboardingModal.remove();
+                if (backdrop) backdrop.remove();
+            });
+        });
+    }
+});
+</script>
+{% endif %}
 {% endblock %}

@@ -826,6 +826,16 @@ def dashboard():
         EventRegistration.registration_status == 'confirmed'
     ).count()
     
+    # Detectar si es un usuario nuevo (creado en las últimas 24 horas)
+    is_new_user = False
+    if current_user.created_at:
+        hours_since_creation = (now - current_user.created_at).total_seconds() / 3600
+        is_new_user = hours_since_creation < 24
+    
+    # Verificar si el usuario ha visto el onboarding
+    onboarding_seen = session.get('onboarding_seen', False)
+    show_onboarding = is_new_user and not onboarding_seen
+    
     return render_template('dashboard.html', 
                          membership=active_membership, 
                          benefits=benefits,
@@ -835,7 +845,16 @@ def dashboard():
                          upcoming_appointments=upcoming_appointments,
                          past_appointments_count=past_appointments_count,
                          upcoming_events=upcoming_events,
-                         registered_events_count=registered_events_count)
+                         registered_events_count=registered_events_count,
+                         show_onboarding=show_onboarding,
+                         is_new_user=is_new_user)
+
+@app.route('/api/onboarding/seen', methods=['POST'])
+@login_required
+def mark_onboarding_seen():
+    """Marca el onboarding como visto"""
+    session['onboarding_seen'] = True
+    return jsonify({'success': True})
 
 @app.route('/membership')
 @login_required
