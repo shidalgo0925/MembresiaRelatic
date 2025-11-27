@@ -335,5 +335,129 @@
             </div>
         </div>
     </div>
+    
+    <!-- Sección de Pago -->
+    <div class="payment-section my-5">
+        <div class="row g-4">
+            <!-- Resumen de Pago -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card payment-card shadow-sm h-100">
+                    <div class="card-body">
+                        <h4 class="card-title mb-3">
+                            <i class="fas fa-receipt text-primary me-2"></i>Resumen de Pago
+                        </h4>
+                        <div class="summary-box p-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted">Plan seleccionado</span>
+                                <strong id="selectedPlanLabel">Premium</strong>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted">Precio anual</span>
+                                <span class="price-tag" id="selectedPlanPrice">$120</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted">Siguiente pago</span>
+                                <span>05/12/2025</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted">Estado</span>
+                                <span class="badge bg-success">Al día</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary w-100 mb-2">
+                            <i class="fas fa-lock me-2"></i>Pagar ahora
+                        </button>
+                        <button class="btn btn-outline-primary w-100">
+                            <i class="fas fa-download me-2"></i>Descargar recibo
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Métodos de Pago -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card payment-card shadow-sm h-100">
+                    <div class="card-body">
+                        <h4 class="card-title mb-3">
+                            <i class="fas fa-credit-card text-primary me-2"></i>Métodos de Pago
+                        </h4>
+                        <div class="method-card active mb-3 p-3 d-flex align-items-center">
+                            <div class="method-icon bg-primary text-white me-3">
+                                <i class="fab fa-cc-visa"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between">
+                                    <strong>Visa terminada en 4242</strong>
+                                    <span class="badge bg-success">Principal</span>
+                                </div>
+                                <small class="text-muted">Expira 08/2026</small>
+                            </div>
+                        </div>
+                        <div class="method-card mb-3 p-3 d-flex align-items-center">
+                            <div class="method-icon bg-secondary text-white me-3">
+                                <i class="fab fa-cc-mastercard"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <strong>Mastercard terminada en 8877</strong>
+                                <small class="text-muted d-block">Expira 02/2027</small>
+                            </div>
+                        </div>
+                        <a href="#" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-plus me-2"></i>Agregar método de pago
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historial de Pagos -->
+            <div class="col-lg-4 col-md-12">
+                <div class="card payment-card shadow-sm h-100">
+                    <div class="card-body">
+                        <h4 class="card-title mb-3">
+                            <i class="fas fa-history text-primary me-2"></i>Historial de Pagos
+                        </h4>
+                        <div class="payment-history">
+                            <div class="payment-item d-flex align-items-center mb-3">
+                                <div class="payment-icon bg-success text-white me-3">
+                                    <i class="fas fa-check"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>Pago anual Premium</strong>
+                                        <span class="text-success">$120</span>
+                                    </div>
+                                    <small class="text-muted">Pagado el 05/12/2024 · Visa 4242</small>
+                                </div>
+                            </div>
+                            <div class="payment-item d-flex align-items-center mb-3">
+                                <div class="payment-icon bg-success text-white me-3">
+                                    <i class="fas fa-check"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>Renovación Premium</strong>
+                                        <span class="text-success">$120</span>
+                                    </div>
+                                    <small class="text-muted">Pagado el 05/12/2023 · Mastercard 8877</small>
+                                </div>
+                            </div>
+                            <div class="payment-item d-flex align-items-center">
+                                <div class="payment-icon bg-warning text-white me-3">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>Próxima renovación</strong>
+                                        <span class="text-warning">$120</span>
+                                    </div>
+                                    <small class="text-muted">Programada para 05/12/2025</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

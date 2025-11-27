@@ -156,6 +156,56 @@
                 </div>
             </div>
 
+            <!-- Mis Recursos Recientes -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-history me-2 text-info"></i>Mis Recursos Recientes
+                        </h5>
+                        <a href="{{ url_for('services') }}" class="btn btn-sm btn-outline-primary">Ver todos</a>
+                    </div>
+                    <div class="recent-resources-list">
+                        <div class="resource-item d-flex align-items-center mb-3 p-2 border rounded">
+                            <div class="resource-icon bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                <i class="fas fa-newspaper"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0 small">Revistas Académicas</h6>
+                                <small class="text-muted">Último acceso: Reciente</small>
+                            </div>
+                            <a href="https://relaticpanama.org/_journals/" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                        <div class="resource-item d-flex align-items-center mb-3 p-2 border rounded">
+                            <div class="resource-icon bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0 small">Cursos y Aprendizaje</h6>
+                                <small class="text-muted">Disponible en tu plan</small>
+                            </div>
+                            <a href="https://dev.relatic.org/detalles-aprendizaje" target="_blank" class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                        <div class="resource-item d-flex align-items-center mb-3 p-2 border rounded">
+                            <div class="resource-icon bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0 small">Libros Digitales</h6>
+                                <small class="text-muted">Biblioteca completa</small>
+                            </div>
+                            <a href="https://relaticpanama.org/_books/index.php/edrp/catalog" target="_blank" class="btn btn-sm btn-outline-info">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Contenidos Destacados -->
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body">
@@ -385,49 +435,114 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <!-- Sidebar Derecho -->
         <div class="col-lg-4">
-            <!-- Información del Usuario y Membresía -->
+            <!-- Notificaciones y Alertas -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="fas fa-bell me-2 text-primary"></i>Notificaciones
+                    </h6>
+                    <span class="badge bg-primary rounded-pill" id="notificationCount">0</span>
+                </div>
+                <div class="card-body p-3" id="notificationsList">
+                    {% if membership and days_remaining is not none and days_remaining < 30 %}
+                    <div class="alert alert-warning alert-sm mb-2 py-2">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <small>Tu membresía vence en {{ days_remaining }} días</small>
+                        <a href="{{ url_for('membership') }}" class="btn btn-sm btn-outline-warning float-end">Renovar</a>
+                    </div>
+                    {% endif %}
+                    {% if upcoming_appointments %}
+                    <div class="alert alert-info alert-sm mb-2 py-2">
+                        <i class="fas fa-calendar-check me-2"></i>
+                        <small>Tienes {{ upcoming_appointments|length }} cita(s) próximas</small>
+                        <a href="{{ url_for('appointments.appointments_home') }}" class="btn btn-sm btn-outline-info float-end">Ver</a>
+                    </div>
+                    {% endif %}
+                    {% if upcoming_events %}
+                    <div class="alert alert-success alert-sm mb-2 py-2">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        <small>Estás registrado en {{ upcoming_events|length }} evento(s)</small>
+                        <a href="{{ url_for('events.list_events') }}" class="btn btn-sm btn-outline-success float-end">Ver</a>
+                    </div>
+                    {% endif %}
+                    {% if is_new_user %}
+                    <div class="alert alert-primary alert-sm mb-2 py-2">
+                        <i class="fas fa-rocket me-2"></i>
+                        <small>¡Bienvenido! Completa tu perfil para empezar</small>
+                        <a href="{{ url_for('profile') }}" class="btn btn-sm btn-outline-primary float-end">Ir</a>
+                    </div>
+                    {% endif %}
+                    <div id="emptyNotifications" class="text-center text-muted small py-3" style="display: none;">
+                        <i class="fas fa-bell-slash fa-2x mb-2"></i>
+                        <p class="mb-0">No hay notificaciones nuevas</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Widget Mi Membresía (Mejorado) -->
             <div class="card border-0 shadow-sm mb-4 sticky-top" style="top: 20px;">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="fas fa-crown me-2"></i>Mi Membresía
+                    </h6>
+                    <a href="{{ url_for('membership') }}" class="text-white" title="Gestionar membresía">
+                        <i class="fas fa-cog"></i>
+                    </a>
+                </div>
                 <div class="card-body">
-                    <div class="text-center mb-4">
-                        <div class="user-avatar mb-3">
+                    <div class="text-center mb-3">
+                        <div class="user-avatar mb-2">
                             <i class="fas fa-user"></i>
                         </div>
-                        <h5 class="mb-1">{{ current_user.first_name }} {{ current_user.last_name }}</h5>
+                        <h6 class="mb-1">{{ current_user.first_name }} {{ current_user.last_name }}</h6>
                         <p class="text-muted small mb-0">{{ current_user.email }}</p>
-    </div>
+                    </div>
 
                     {% if membership %}
-                    <div class="membership-info border-top pt-3 mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="text-muted small">Membresía</span>
-                            <span class="badge bg-primary">{{ membership.membership_type|upper }}</span>
+                    <div class="membership-widget">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <span class="text-muted small d-block">Plan Actual</span>
+                                <span class="badge bg-primary fs-6">{{ membership.membership_type|upper }}</span>
+                            </div>
+                            <div class="text-end">
+                                <span class="text-muted small d-block">Estado</span>
+                                <span class="badge bg-success">Activa</span>
+                            </div>
                         </div>
-                        {% if days_active is not none %}
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="text-muted small">Días activos</span>
-                            <span class="fw-bold">{{ days_active }}</span>
-                        </div>
-                        {% endif %}
-                        {% if days_remaining is not none %}
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="text-muted small">Días restantes</span>
-                            <span class="fw-bold {% if days_remaining < 30 %}text-danger{% elif days_remaining < 60 %}text-warning{% else %}text-success{% endif %}">
-                                {{ days_remaining }}
-                            </span>
-                        </div>
-                        {% endif %}
+                        
                         {% if membership.end_date %}
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="text-muted small">Vence</span>
-                            <span class="small">{{ membership.end_date.strftime('%d/%m/%Y') }}</span>
+                        <div class="progress mb-2" style="height: 8px;">
+                            {% set progress_percent = ((days_active or 0) / 365 * 100) if days_active else 0 %}
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ progress_percent|round }}%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <small class="text-muted">Vence: {{ membership.end_date.strftime('%d/%m/%Y') }}</small>
+                            {% if days_remaining is not none %}
+                            <small class="fw-bold {% if days_remaining < 30 %}text-danger{% elif days_remaining < 60 %}text-warning{% else %}text-success{% endif %}">
+                                {{ days_remaining }} días restantes
+                            </small>
+                            {% endif %}
                         </div>
                         {% endif %}
+                        
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('membership') }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-cog me-1"></i>Gestionar Membresía
+                            </a>
+                            <a href="{{ url_for('profile') }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-user-edit me-1"></i>Editar Perfil
+                            </a>
+                        </div>
                     </div>
                     {% else %}
                     <div class="alert alert-warning mb-3">
-                        <small><i class="fas fa-exclamation-triangle me-1"></i> No tienes una membresía activa</small>
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <small>No tienes una membresía activa</small>
                     </div>
-                    <a href="{{ url_for('membership') }}" class="btn btn-primary btn-sm w-100">Ver Planes</a>
+                    <a href="{{ url_for('membership') }}" class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-crown me-1"></i>Ver Planes Disponibles
+                    </a>
                     {% endif %}
 
                     <!-- Estadísticas Rápidas -->
@@ -990,7 +1105,73 @@ document.addEventListener('DOMContentLoaded', function() {
     transform: translateY(-3px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
+
+/* Notificaciones */
+.alert-sm {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.alert-sm .btn {
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+#emptyNotifications {
+    display: none;
+}
+
+/* Widget Membresía */
+.membership-widget {
+    padding: 0.5rem 0;
+}
+
+.membership-widget .progress {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Recursos Recientes */
+.recent-resources-list .resource-item {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.recent-resources-list .resource-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(5px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.resource-icon {
+    flex-shrink: 0;
+}
 </style>
+
+<script>
+// Actualizar contador de notificaciones
+document.addEventListener('DOMContentLoaded', function() {
+    const notificationsList = document.getElementById('notificationsList');
+    const notificationCount = document.getElementById('notificationCount');
+    const emptyNotifications = document.getElementById('emptyNotifications');
+    
+    if (notificationsList) {
+        const alerts = notificationsList.querySelectorAll('.alert');
+        const count = alerts.length;
+        
+        if (notificationCount) {
+            notificationCount.textContent = count;
+            if (count === 0) {
+                notificationCount.style.display = 'none';
+            }
+        }
+        
+        if (count === 0 && emptyNotifications) {
+            emptyNotifications.style.display = 'block';
+        }
+    }
+});
+</script>
 
 <!-- Modal de Onboarding para Nuevos Usuarios -->
 {% if show_onboarding %}

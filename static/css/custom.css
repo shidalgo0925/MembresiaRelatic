@@ -136,6 +136,73 @@
         box-shadow: 0 15px 35px rgba(249, 115, 22, 0.3);
     }
 
+/* Sección de Pago */
+.payment-section .card-title {
+    font-weight: 600;
+}
+
+.payment-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+}
+
+.summary-box {
+    background: #f8fafc;
+    border-radius: 12px;
+}
+
+.price-tag {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary-blue);
+}
+
+.method-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.method-card.active {
+    border-color: var(--primary-blue);
+    box-shadow: 0 6px 20px rgba(0, 142, 226, 0.15);
+}
+
+.method-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+}
+
+.method-icon,
+.payment-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.payment-history {
+    max-height: 320px;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+.payment-item {
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 0.25rem;
+}
+
+.payment-item:last-child {
+    border-bottom: none;
+}
+
+.payment-section .btn {
+    border-radius: 10px;
+}
+
 /* Headers de tarjetas */
 .card-header {
     background: linear-gradient(135deg, var(--light-blue) 0%, var(--secondary-blue) 100%);
