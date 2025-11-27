@@ -84,6 +84,12 @@
                                 <span class="value">{{ event.capacity }}</span>
                             </li>
                             {% endif %}
+                            {% if available_spots is not None %}
+                            <li>
+                                <span class="label">Disponibles</span>
+                                <span class="value">{{ available_spots }}</span>
+                            </li>
+                            {% endif %}
                             {% if event.contact_email %}
                             <li>
                                 <span class="label">Contacto</span>
@@ -123,33 +129,79 @@
                             <strong>Incluido en tu membresía.</strong> Acceso sin costo adicional.
                         </div>
                         {% endif %}
+                        
+                        <!-- Botón de registro -->
+                        <div class="mt-4">
+                            {% if registration %}
+                                {% if registration.registration_status == 'confirmed' %}
+                                    <div class="alert alert-success mb-3">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        <strong>Estás registrado</strong> en este evento.
+                                    </div>
+                                    <form method="POST" action="{{ url_for('events.cancel_event_registration', slug=event.slug) }}" onsubmit="return confirm('¿Estás seguro de cancelar tu registro?');">
+                                        <button type="submit" class="btn btn-outline-danger w-100">
+                                            <i class="fas fa-times me-2"></i>Cancelar Registro
+                                        </button>
+                                    </form>
+                                {% elif registration.registration_status == 'pending' %}
+                                    <div class="alert alert-warning mb-3">
+                                        <i class="fas fa-clock me-2"></i>
+                                        <strong>Registro pendiente</strong> de confirmación.
+                                    </div>
+                                {% elif registration.registration_status == 'cancelled' %}
+                                    <form method="POST" action="{{ url_for('events.register_to_event', slug=event.slug) }}">
+                                        <button type="submit" class="btn btn-primary w-100">
+                                            <i class="fas fa-user-plus me-2"></i>Registrarse Nuevamente
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            {% else %}
+                                {% if is_full %}
+                                    <div class="alert alert-warning mb-0">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <strong>Evento lleno.</strong> No hay cupos disponibles.
+                                    </div>
+                                {% else %}
+                                    <form method="POST" action="{{ url_for('events.register_to_event', slug=event.slug) }}">
+                                        <button type="submit" class="btn btn-primary w-100 btn-lg">
+                                            <i class="fas fa-user-plus me-2"></i>Registrarse al Evento
+                                        </button>
+                                    </form>
+                                    {% if available_spots is not None and available_spots > 0 %}
+                                        <small class="text-muted d-block mt-2 text-center">
+                                            {{ available_spots }} cupo{{ 's' if available_spots > 1 else '' }} disponible{{ 's' if available_spots > 1 else '' }}
+                                        </small>
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
 
-                {% if event.discount_assignments %}
+                {% if event.discounts %}
                 <div class="card shadow-sm border-0">
                     <div class="card-body p-4">
                         <h3 class="h5 mb-3"><i class="fas fa-percentage text-success me-2"></i>Descuentos disponibles</h3>
                         <ul class="list-group list-group-flush">
-                            {% for assignment in event.discount_assignments %}
+                            {% for event_discount in event.discounts %}
                             <li class="list-group-item px-0">
                                 <div class="d-flex justify-content-between">
                                     <div>
-                                        <strong>{{ assignment.discount.name }}</strong>
-                                        {% if assignment.discount.membership_tier %}
-                                        <span class="badge bg-primary-subtle text-primary ms-2">{{ assignment.discount.membership_tier|upper }}</span>
+                                        <strong>{{ event_discount.discount.name }}</strong>
+                                        {% if event_discount.discount.membership_tier %}
+                                        <span class="badge bg-primary-subtle text-primary ms-2">{{ event_discount.discount.membership_tier|upper }}</span>
                                         {% endif %}
                                     </div>
                                     <span class="text-success">
-                                        {% if assignment.discount.discount_type == 'percentage' %}
-                                            -{{ assignment.discount.value|round(0) }}%
+                                        {% if event_discount.discount.discount_type == 'percentage' %}
+                                            -{{ event_discount.discount.value|round(0) }}%
                                         {% else %}
-                                            -{{ assignment.discount.value|round(2) }} {{ event.currency }}
+                                            -{{ event_discount.discount.value|round(2) }} {{ event.currency }}
                                         {% endif %}
                                     </span>
                                 </div>
-                                {% if assignment.discount.description %}
-                                <small class="text-muted d-block">{{ assignment.discount.description }}</small>
+                                {% if event_discount.discount.description %}
+                                <small class="text-muted d-block">{{ event_discount.discount.description }}</small>
                                 {% endif %}
                             </li>
                             {% endfor %}
@@ -162,4 +214,3 @@
     </div>
 </section>
 {% endblock %}
-

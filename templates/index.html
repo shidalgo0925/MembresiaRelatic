@@ -27,7 +27,21 @@
                 <!-- Logo RELATIC PANAMÁ -->
                 <div class="logo-container mb-4">
                     <div class="logo-icon">
-                        <img src="{{ url_for('static', filename='images/logo-relatic.svg') }}" alt="RELATIC" style="max-width: 200px; height: auto;">
+                        <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Fondo del icono -->
+                            <rect x="10" y="10" width="100" height="100" rx="15" fill="#1e3a8a" stroke="#3b82f6" stroke-width="2"/>
+                            <!-- Globo terráqueo -->
+                            <circle cx="60" cy="60" r="35" fill="none" stroke="white" stroke-width="3"/>
+                            <!-- Líneas horizontales (paralelos) -->
+                            <line x1="25" y1="45" x2="95" y2="45" stroke="white" stroke-width="2"/>
+                            <line x1="30" y1="60" x2="90" y2="60" stroke="white" stroke-width="2"/>
+                            <line x1="25" y1="75" x2="95" y2="75" stroke="white" stroke-width="2"/>
+                            <!-- Líneas verticales (meridianos) -->
+                            <path d="M 60 25 Q 45 60 60 95" fill="none" stroke="white" stroke-width="2"/>
+                            <path d="M 60 25 Q 75 60 60 95" fill="none" stroke="white" stroke-width="2"/>
+                            <!-- Punto de notificación -->
+                            <circle cx="95" cy="25" r="8" fill="#3b82f6"/>
+                        </svg>
                     </div>
                     <div class="logo-text">
                         <h2 class="logo-title">RELATIC PANAMÁ</h2>
@@ -186,6 +200,121 @@
                         <a href="{{ url_for('membership') }}" class="btn btn-warning">Ver Membresía</a>
                         {% endif %}
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials Section -->
+<section class="py-5 bg-white">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center mb-5">
+                <h2 class="display-5 fw-bold">Lo que dicen nuestros miembros</h2>
+                <p class="lead">Testimonios reales de profesionales que confían en RELATIC</p>
+            </div>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card testimonial-card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="card-text mb-3">"RELATIC ha transformado mi forma de investigar. El acceso a las bases de datos y revistas especializadas es invaluable para mi trabajo académico."</p>
+                        <div class="d-flex align-items-center">
+                            <div class="testimonial-avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <strong>Dra. María González</strong>
+                                <small class="d-block text-muted">Investigadora, Universidad de Panamá</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card testimonial-card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="card-text mb-3">"La asesoría profesional que recibí me ayudó a publicar mi primer artículo en una revista indexada. El equipo es muy profesional y comprometido."</p>
+                        <div class="d-flex align-items-center">
+                            <div class="testimonial-avatar bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <strong>Dr. Carlos Rodríguez</strong>
+                                <small class="d-block text-muted">Profesor, Universidad Tecnológica</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card testimonial-card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="card-text mb-3">"Los eventos y webinars exclusivos son excelentes oportunidades para networking. La comunidad RELATIC es muy activa y colaborativa."</p>
+                        <div class="d-flex align-items-center">
+                            <div class="testimonial-avatar bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <strong>Lic. Ana Martínez</strong>
+                                <small class="d-block text-muted">Consultora Independiente</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Trust Signals Section -->
+<section class="py-4 bg-light">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-3 mb-3 mb-md-0">
+                <div class="trust-stat">
+                    <h3 class="text-primary mb-1">500+</h3>
+                    <p class="text-muted mb-0 small">Miembros activos</p>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3 mb-md-0">
+                <div class="trust-stat">
+                    <h3 class="text-primary mb-1">50+</h3>
+                    <p class="text-muted mb-0 small">Eventos realizados</p>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3 mb-md-0">
+                <div class="trust-stat">
+                    <h3 class="text-primary mb-1">100+</h3>
+                    <p class="text-muted mb-0 small">Publicaciones indexadas</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="trust-stat">
+                    <h3 class="text-primary mb-1">95%</h3>
+                    <p class="text-muted mb-0 small">Satisfacción de miembros</p>
                 </div>
             </div>
         </div>

@@ -143,106 +143,119 @@
             {% endif %}
         {% endwith %}
         
-        <!-- Left Panel - Estilo Sufee -->
+        <!-- Botón para expandir sidebar cuando está colapsado -->
+        <button id="expandSidebarBtn" class="expand-sidebar-btn" aria-label="Expand sidebar" style="display: none;">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <!-- Left Panel - Estilo CoreUI -->
         <aside id="left-panel" class="left-panel">
-            <!-- Botón para mostrar/ocultar sidebar -->
-            <button id="sidebarToggle" class="sidebar-toggle-btn" aria-label="Toggle sidebar">
-                <i class="fas fa-bars"></i>
-            </button>
             <nav class="navbar navbar-expand-sm navbar-default">
-                <div class="navbar-header"></div>
+                <!-- Logo/Brand -->
+                <div class="sidebar-brand">
+                    <a href="{{ url_for('dashboard') }}" class="sidebar-brand-full d-flex align-items-center text-decoration-none">
+                        <div class="sidebar-brand-icon me-2">
+                            <i class="fas fa-globe-americas" style="font-size: 24px; color: #FFD700;"></i>
+                        </div>
+                        <div>
+                            <div class="sidebar-brand-text fw-bold" style="color: #2d3b45; font-size: 18px;">RELATIC</div>
+                            <div class="sidebar-brand-text-small" style="color: #8b969e; font-size: 12px;">PANAMÁ</div>
+                        </div>
+                    </a>
+                    <a href="{{ url_for('dashboard') }}" class="sidebar-brand-narrow text-decoration-none">
+                        <i class="fas fa-globe-americas"></i>
+                    </a>
+                    <button class="menu-hamburger-btn" aria-label="Menu">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
 
                 <div id="main-menu" class="main-menu navbar-collapse">
                     <ul class="nav navbar-nav">
-                        <li class="{% if request.endpoint == 'dashboard' %}active{% endif %}">
-                            <a href="{{ url_for('dashboard') }}">
-                                <i class="menu-icon fa fa-dashboard"></i>
+                        <!-- Getting Started -->
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+                                <i class="menu-icon fa fa-tachometer-alt"></i>
                                 <span class="menu-title-text">Dashboard</span>
                             </a>
                         </li>
                         
-                        <h3 class="menu-title">Miembros</h3>
-                        
-                        <li class="{% if request.endpoint == 'benefits' %}active{% endif %}">
-                            <a href="{{ url_for('benefits') }}">
-                                <i class="menu-icon fa fa-star"></i>
-                                <span class="menu-title-text">Beneficios</span>
-                            </a>
-                        </li>
-                        <li class="{% if request.endpoint == 'services' %}active{% endif %}">
-                            <a href="{{ url_for('services') }}">
-                                <i class="menu-icon fa fa-th-large"></i>
-                                <span class="menu-title-text">Servicios</span>
-                            </a>
-                        </li>
-                        <li class="{% if request.endpoint == 'office365' %}active{% endif %}">
-                            <a href="{{ url_for('office365') }}">
-                                <i class="menu-icon fa fa-microsoft"></i>
-                                <span class="menu-title-text">Office 365</span>
-                            </a>
-                        </li>
-                        <li class="{% if request.endpoint == 'foros' %}active{% endif %}">
-                            <a href="{{ url_for('foros') }}">
-                                <i class="menu-icon fa fa-comments"></i>
-                                <span class="menu-title-text">Foros</span>
-                            </a>
-                        </li>
-                        <li class="{% if request.endpoint == 'grupos' %}active{% endif %}">
-                            <a href="{{ url_for('grupos') }}">
-                                <i class="menu-icon fa fa-user-friends"></i>
-                                <span class="menu-title-text">Grupos</span>
-                            </a>
-                        </li>
-                        <li class="{% if request.blueprint == 'events' or request.endpoint == 'events.list_events' %}active{% endif %}">
-                            <a href="{{ url_for('events.list_events') }}">
-                                <i class="menu-icon fa fa-calendar-alt"></i>
-                                <span class="menu-title-text">Eventos</span>
-                            </a>
-                        </li>
-                        <li class="{% if request.blueprint == 'appointments' %}active{% endif %}">
-                            <a href="{{ url_for('appointments.appointments_home') }}">
-                                <i class="menu-icon fa fa-calendar-check"></i>
-                                <span class="menu-title-text">Citas</span>
-                            </a>
-                        </li>
-                        <li class="{% if request.endpoint == 'membership' %}active{% endif %}">
-                            <a href="{{ url_for('membership') }}">
-                                <i class="menu-icon fa fa-crown"></i>
-                                <span class="menu-title-text">Membresía</span>
-                            </a>
-                        </li>
-                        {% if current_user.is_admin %}
-                        <h3 class="menu-title">Administración</h3>
-                        
-                        <li class="{% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
-                            <a href="{{ url_for('admin_dashboard') }}">
-                                <i class="menu-icon fa fa-tachometer-alt"></i>
-                                <span class="menu-title-text">Panel Admin</span>
-                            </a>
-                        </li>
-                        <li class="{% if request.endpoint == 'admin_users' %}active{% endif %}">
-                            <a href="{{ url_for('admin_users') }}">
+                        <!-- Miembros - Sección Expandible -->
+                        <li class="nav-item nav-group {% if request.endpoint in ['benefits', 'services', 'office365', 'membership'] or request.blueprint in ['events', 'appointments'] %}show{% endif %}">
+                            <a class="nav-link nav-group-toggle" href="#" onclick="return false;">
                                 <i class="menu-icon fa fa-users"></i>
-                                <span class="menu-title-text">Usuarios</span>
+                                <span class="menu-title-text">Miembros</span>
+                                <i class="menu-arrow fa fa-chevron-down"></i>
                             </a>
+                            <ul class="nav-group-items">
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.endpoint == 'benefits' %}active{% endif %}" href="{{ url_for('benefits') }}">
+                                        <span class="menu-title-text">Beneficios</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.endpoint == 'services' %}active{% endif %}" href="{{ url_for('services') }}">
+                                        <span class="menu-title-text">Servicios</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.endpoint == 'office365' %}active{% endif %}" href="{{ url_for('office365') }}">
+                                        <span class="menu-title-text">Office 365</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.endpoint == 'membership' %}active{% endif %}" href="{{ url_for('membership') }}">
+                                        <span class="menu-title-text">Membresía</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.blueprint == 'events' %}active{% endif %}" href="{{ url_for('events.list_events') }}">
+                                        <span class="menu-title-text">Eventos</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.blueprint == 'appointments' %}active{% endif %}" href="{{ url_for('appointments.appointments_home') }}">
+                                        <span class="menu-title-text">Citas</span>
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
-                        <li class="{% if request.endpoint == 'admin_memberships' %}active{% endif %}">
-                            <a href="{{ url_for('admin_memberships') }}">
-                                <i class="menu-icon fa fa-crown"></i>
-                                <span class="menu-title-text">Membresías</span>
+                        
+                        {% if current_user.is_admin %}
+                        <!-- Administración - Sección Expandible -->
+                        <li class="nav-item nav-group {% if request.endpoint in ['admin_dashboard', 'admin_users', 'admin_memberships'] or request.blueprint == 'admin_events' or request.endpoint == 'admin_events.discounts_index' %}show{% endif %}">
+                            <a class="nav-link nav-group-toggle" href="#" onclick="return false;">
+                                <i class="menu-icon fa fa-cog"></i>
+                                <span class="menu-title-text">Administración</span>
+                                <i class="menu-arrow fa fa-chevron-down"></i>
                             </a>
-                        </li>
-                        <li class="{% if request.blueprint == 'admin_events' %}active{% endif %}">
-                            <a href="{{ url_for('admin_events.admin_events_index') }}">
-                                <i class="menu-icon fa fa-calendar-alt"></i>
-                                <span class="menu-title-text">Eventos</span>
-                            </a>
-                        </li>
-                        <li class="{% if request.blueprint == 'admin_appointments' %}active{% endif %}">
-                            <a href="{{ url_for('admin_appointments.admin_appointments_dashboard') }}">
-                                <i class="menu-icon fa fa-calendar-check"></i>
-                                <span class="menu-title-text">Citas</span>
-                            </a>
+                            <ul class="nav-group-items">
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}" href="{{ url_for('admin_dashboard') }}">
+                                        <span class="menu-title-text">Panel Admin</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.endpoint == 'admin_users' %}active{% endif %}" href="{{ url_for('admin_users') }}">
+                                        <span class="menu-title-text">Usuarios</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.endpoint == 'admin_memberships' %}active{% endif %}" href="{{ url_for('admin_memberships') }}">
+                                        <span class="menu-title-text">Membresías</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.blueprint == 'admin_events' and request.endpoint != 'admin_events.discounts_index' %}active{% endif %}" href="{{ url_for('admin_events.admin_events_index') }}">
+                                        <span class="menu-title-text">Gestión de Eventos</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.endpoint == 'admin_events.discounts_index' %}active{% endif %}" href="{{ url_for('admin_events.discounts_index') }}">
+                                        <span class="menu-title-text">Descuentos</span>
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
                         {% endif %}
                     </ul>
@@ -275,7 +288,6 @@
         {% endblock %}
         {% if current_user.is_authenticated and request.endpoint not in ['index', 'login', 'register'] %}
             </div>
-            
             <!-- Footer -->
             <footer class="footer py-5 mt-4">
                 <div class="container">
@@ -330,15 +342,33 @@
                             </div>
                         </div>
                     </div>
-                    <div class="border-top border-secondary mt-4 pt-3 text-center text-muted small">
-                        &copy; 2024 RelaticPanama. Todos los derechos reservados.
+                    <div class="border-top border-secondary mt-4 pt-4">
+                        <div class="row">
+                            <div class="col-md-8 text-center text-md-start">
+                                <p class="text-muted small mb-2">
+                                    &copy; 2024 RelaticPanama. Todos los derechos reservados.
+                                </p>
+                            </div>
+                            <div class="col-md-4 text-center text-md-end">
+                                <div class="d-flex flex-wrap justify-content-center justify-content-md-end gap-3">
+                                    <a href="#" class="text-light text-decoration-none small" data-bs-toggle="modal" data-bs-target="#termsModal">
+                                        <i class="fas fa-file-contract me-1"></i>Términos y Condiciones
+                                    </a>
+                                    <a href="#" class="text-light text-decoration-none small" data-bs-toggle="modal" data-bs-target="#privacyModal">
+                                        <i class="fas fa-shield-alt me-1"></i>Privacidad
+                                    </a>
+                                    <a href="#" class="text-light text-decoration-none small" data-bs-toggle="modal" data-bs-target="#refundModal">
+                                        <i class="fas fa-undo me-1"></i>Política de Reembolso
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </footer>
         </div>
         {% else %}
         </div>
-        
         <!-- Footer -->
         <footer class="footer py-5 mt-4">
             <div class="container">
@@ -393,8 +423,27 @@
                         </div>
                     </div>
                 </div>
-                <div class="border-top border-secondary mt-4 pt-3 text-center text-muted small">
-                    &copy; 2024 RelaticPanama. Todos los derechos reservados.
+                <div class="border-top border-secondary mt-4 pt-4">
+                    <div class="row">
+                        <div class="col-md-8 text-center text-md-start">
+                            <p class="text-muted small mb-2">
+                                &copy; 2024 RelaticPanama. Todos los derechos reservados.
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-center text-md-end">
+                            <div class="d-flex flex-wrap justify-content-center justify-content-md-end gap-3">
+                                <a href="#" class="text-light text-decoration-none small" data-bs-toggle="modal" data-bs-target="#termsModal">
+                                    <i class="fas fa-file-contract me-1"></i>Términos y Condiciones
+                                </a>
+                                <a href="#" class="text-light text-decoration-none small" data-bs-toggle="modal" data-bs-target="#privacyModal">
+                                    <i class="fas fa-shield-alt me-1"></i>Privacidad
+                                </a>
+                                <a href="#" class="text-light text-decoration-none small" data-bs-toggle="modal" data-bs-target="#refundModal">
+                                    <i class="fas fa-undo me-1"></i>Política de Reembolso
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </footer>
@@ -403,46 +452,178 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Sidebar Toggle Functionality
+        // Sidebar Toggle Functionality (usando el botón dentro del menú y el botón de expandir)
         document.addEventListener('DOMContentLoaded', function() {
-            const sidebarToggle = document.getElementById('sidebarToggle');
+            const menuHamburgerBtn = document.querySelector('.menu-hamburger-btn');
+            const expandSidebarBtn = document.getElementById('expandSidebarBtn');
             const leftPanel = document.getElementById('left-panel');
             const rightPanel = document.getElementById('right-panel');
             
-            if (sidebarToggle && leftPanel && rightPanel) {
+            function toggleSidebar() {
+                document.body.classList.toggle('sidebar-collapsed');
+                const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+                localStorage.setItem('sidebarCollapsed', isCollapsed ? 'true' : 'false');
+            }
+            
+            if (leftPanel && rightPanel) {
                 // Check localStorage for saved state
                 const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
                 if (isCollapsed) {
                     document.body.classList.add('sidebar-collapsed');
                 }
                 
-                sidebarToggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    document.body.classList.toggle('sidebar-collapsed');
-                    const isCollapsed = document.body.classList.contains('sidebar-collapsed');
-                    localStorage.setItem('sidebarCollapsed', isCollapsed ? 'true' : 'false');
-                    
-                    // Actualizar icono del botón
-                    const icon = sidebarToggle.querySelector('i');
-                    if (isCollapsed) {
-                        icon.classList.remove('fa-bars');
-                        icon.classList.add('fa-chevron-right');
-                    } else {
-                        icon.classList.remove('fa-chevron-right');
-                        icon.classList.add('fa-bars');
-                    }
-                });
+                // Botón hamburguesa dentro del menú
+                if (menuHamburgerBtn) {
+                    menuHamburgerBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleSidebar();
+                    });
+                }
                 
-                // Inicializar icono según estado
-                const icon = sidebarToggle.querySelector('i');
-                if (isCollapsed) {
-                    icon.classList.remove('fa-bars');
-                    icon.classList.add('fa-chevron-right');
+                // Botón para expandir cuando está colapsado
+                if (expandSidebarBtn) {
+                    expandSidebarBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleSidebar();
+                    });
                 }
             }
+            
+            // Manejo de grupos expandibles - Estilo CoreUI
+            const navGroups = document.querySelectorAll('.nav-group');
+            
+            navGroups.forEach(group => {
+                const toggle = group.querySelector('.nav-group-toggle');
+                
+                if (toggle) {
+                    toggle.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        if (!document.body.classList.contains('sidebar-collapsed')) {
+                            group.classList.toggle('show');
+                            // Guardar estado en localStorage
+                            const groupName = group.querySelector('.menu-title-text').textContent.trim();
+                            const isOpen = group.classList.contains('show');
+                            localStorage.setItem(`navGroup_${groupName}`, isOpen ? 'open' : 'closed');
+                        }
+                    });
+                }
+            });
+            
+            // Restaurar estados de grupos desde localStorage
+            navGroups.forEach(group => {
+                const groupName = group.querySelector('.menu-title-text').textContent.trim();
+                const savedState = localStorage.getItem(`navGroup_${groupName}`);
+                if (savedState === 'open') {
+                    group.classList.add('show');
+                }
+            });
         });
     </script>
+
+    <!-- Modales de Políticas -->
+    <!-- Modal Términos y Condiciones -->
+    <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="termsModalLabel">
+                        <i class="fas fa-file-contract me-2"></i>Términos y Condiciones
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>1. Aceptación de los Términos</h6>
+                    <p>Al acceder y utilizar los servicios de RELATIC Panamá, usted acepta estar sujeto a estos términos y condiciones.</p>
+                    
+                    <h6 class="mt-4">2. Membresías</h6>
+                    <p>Las membresías son anuales y se renuevan automáticamente a menos que se cancele antes de la fecha de vencimiento.</p>
+                    
+                    <h6 class="mt-4">3. Uso del Contenido</h6>
+                    <p>El contenido proporcionado es para uso personal y académico únicamente. No está permitida la redistribución comercial sin autorización.</p>
+                    
+                    <h6 class="mt-4">4. Cancelación</h6>
+                    <p>Puede cancelar su membresía en cualquier momento desde su panel de usuario. La cancelación no implica reembolso de pagos ya realizados.</p>
+                    
+                    <h6 class="mt-4">5. Modificaciones</h6>
+                    <p>RELATIC Panamá se reserva el derecho de modificar estos términos en cualquier momento. Los cambios serán notificados a los miembros activos.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Privacidad -->
+    <div class="modal fade" id="privacyModal" tabindex="-1" aria-labelledby="privacyModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="privacyModalLabel">
+                        <i class="fas fa-shield-alt me-2"></i>Política de Privacidad
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>1. Información que Recopilamos</h6>
+                    <p>Recopilamos información que usted nos proporciona directamente, como nombre, correo electrónico, información de pago y preferencias de membresía.</p>
+                    
+                    <h6 class="mt-4">2. Uso de la Información</h6>
+                    <p>Utilizamos su información para procesar pagos, proporcionar servicios, comunicarnos con usted y mejorar nuestra plataforma.</p>
+                    
+                    <h6 class="mt-4">3. Protección de Datos</h6>
+                    <p>Implementamos medidas de seguridad técnicas y organizativas para proteger su información personal contra acceso no autorizado.</p>
+                    
+                    <h6 class="mt-4">4. Compartir Información</h6>
+                    <p>No vendemos ni compartimos su información personal con terceros, excepto cuando sea necesario para proporcionar nuestros servicios o cuando la ley lo requiera.</p>
+                    
+                    <h6 class="mt-4">5. Sus Derechos</h6>
+                    <p>Usted tiene derecho a acceder, corregir o eliminar su información personal en cualquier momento contactándonos.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Política de Reembolso -->
+    <div class="modal fade" id="refundModal" tabindex="-1" aria-labelledby="refundModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="refundModalLabel">
+                        <i class="fas fa-undo me-2"></i>Política de Reembolso
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>1. Período de Reembolso</h6>
+                    <p>Ofrecemos reembolsos completos dentro de los primeros 30 días de la compra de una membresía, siempre que no se haya utilizado el servicio de manera significativa.</p>
+                    
+                    <h6 class="mt-4">2. Proceso de Reembolso</h6>
+                    <p>Para solicitar un reembolso, contacte a nuestro equipo de soporte con su número de transacción y motivo de la solicitud.</p>
+                    
+                    <h6 class="mt-4">3. Reembolsos Parciales</h6>
+                    <p>Después de 30 días, los reembolsos se evaluarán caso por caso y pueden ser parciales según el tiempo de uso del servicio.</p>
+                    
+                    <h6 class="mt-4">4. Método de Reembolso</h6>
+                    <p>Los reembolsos se procesarán al método de pago original dentro de 5-10 días hábiles.</p>
+                    
+                    <h6 class="mt-4">5. Cancelación sin Reembolso</h6>
+                    <p>La cancelación de una membresía activa no genera reembolso automático. El acceso continuará hasta el final del período pagado.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>

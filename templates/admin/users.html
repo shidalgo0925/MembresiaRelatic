@@ -31,7 +31,6 @@
                                     <th>Fecha Registro</th>
                                     <th>Estado</th>
                                     <th>Admin</th>
-                                    <th>Asesor</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
@@ -54,82 +53,11 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-{{ 'info' if user.is_advisor else 'secondary' }}">
-                                            {{ 'Sí' if user.is_advisor else 'No' }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editUserModal{{ user.id }}">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="alert('Funcionalidad pendiente')">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                     </td>
                                 </tr>
-                                <!-- Modal -->
-                                <div class="modal fade" id="editUserModal{{ user.id }}" tabindex="-1" aria-labelledby="editUserModalLabel{{ user.id }}" aria-hidden="true">
-                                    <div class="modal-dialog modal-lg modal-dialog-centered">
-                                        <div class="modal-content">
-                                            <form method="post" action="{{ url_for('admin_update_user', user_id=user.id) }}">
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title" id="editUserModalLabel{{ user.id }}">Editar usuario #{{ user.id }}</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    <div class="row g-3">
-                                                        <div class="col-md-6">
-                                                            <label class="form-label">Nombre</label>
-                                                            <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}" required>
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            <label class="form-label">Apellido</label>
-                                                            <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}" required>
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            <label class="form-label">Teléfono</label>
-                                                            <input type="text" name="phone" class="form-control" value="{{ user.phone or '' }}">
-                                                        </div>
-                                                        <div class="col-md-6 d-flex align-items-center">
-                                                            <div class="form-check me-3">
-                                                                <input class="form-check-input" type="checkbox" name="is_active" id="isActive{{ user.id }}" value="1" {% if user.is_active %}checked{% endif %}>
-                                                                <label class="form-check-label" for="isActive{{ user.id }}">Activo</label>
-                                                            </div>
-                                                            <div class="form-check me-3">
-                                                                <input class="form-check-input" type="checkbox" name="is_admin" id="isAdmin{{ user.id }}" value="1" {% if user.is_admin %}checked{% endif %}>
-                                                                <label class="form-check-label" for="isAdmin{{ user.id }}">Administrador</label>
-                                                            </div>
-                                                            <div class="form-check">
-                                                                <input class="form-check-input" type="checkbox" name="is_advisor" id="isAdvisor{{ user.id }}" value="1" {% if user.is_advisor %}checked{% endif %}>
-                                                                <label class="form-check-label" for="isAdvisor{{ user.id }}">Asesor</label>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-12">
-                                                            <div class="alert alert-light border">
-                                                                <h6 class="mb-2 text-primary"><i class="fas fa-user-tie me-2"></i>Información de asesor (opcional)</h6>
-                                                                <div class="row g-2">
-                                                                    <div class="col-md-6">
-                                                                        <label class="form-label small text-muted">Titular profesional</label>
-                                                                        <input type="text" name="advisor_headline" class="form-control form-control-sm" value="{{ user.advisor_profile.headline if user.advisor_profile else '' }}" placeholder="Ej: Consultor en Publicaciones">
-                                                                    </div>
-                                                                    <div class="col-md-6">
-                                                                        <label class="form-label small text-muted">URL de reunión</label>
-                                                                        <input type="url" name="advisor_meeting_url" class="form-control form-control-sm" value="{{ user.advisor_profile.meeting_url if user.advisor_profile else '' }}" placeholder="https://meet...">
-                                                                    </div>
-                                                                    <div class="col-12">
-                                                                        <label class="form-label small text-muted">Especializaciones</label>
-                                                                        <textarea name="advisor_specializations" class="form-control form-control-sm" rows="2" placeholder="Investigación, publicaciones, etc.">{{ user.advisor_profile.specializations if user.advisor_profile else '' }}</textarea>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-link text-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
                                 {% endfor %}
                             </tbody>
                         </table>

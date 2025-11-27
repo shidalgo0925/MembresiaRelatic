@@ -51,7 +51,7 @@ allowed_file = None
 
 def init_models():
     """Importa los modelos necesarios desde app.py una vez que existen."""
-    global db, Event, EventImage, Discount, EventDiscount, ActivityLog, allowed_file
+    global db, Event, EventImage, Discount, EventDiscount, ActivityLog, allowed_file, EventRegistration
     try:
         from app import (
             db as _db,
@@ -61,6 +61,7 @@ def init_models():
             EventDiscount as _EventDiscount,
             ActivityLog as _ActivityLog,
             allowed_file as _allowed_file,
+            EventRegistration as _EventRegistration,
         )
 
         db = _db
@@ -70,6 +71,7 @@ def init_models():
         EventDiscount = _EventDiscount
         ActivityLog = _ActivityLog
         allowed_file = _allowed_file
+        EventRegistration = _EventRegistration
     except ImportError:
         pass
 
@@ -228,12 +230,139 @@ def event_detail(slug):
     membership = current_user.get_active_membership()
     membership_type = membership.membership_type if membership else None
     pricing = event.pricing_for_membership(membership_type)
+    
+    # Verificar si el usuario ya está registrado
+    registration = EventRegistration.query.filter_by(
+        event_id=event.id,
+        user_id=current_user.id
+    ).first() if EventRegistration else None
+    
+    # Verificar capacidad disponible
+    is_full = False
+    available_spots = None
+    if event.capacity and event.capacity > 0:
+        registered_count = EventRegistration.query.filter_by(
+            event_id=event.id,
+            registration_status='confirmed'
+        ).count() if EventRegistration else 0
+        available_spots = event.capacity - registered_count
+        is_full = available_spots <= 0
+    
     return render_template(
         'events/detail.html',
         event=event,
         membership=membership,
-        pricing=pricing
+        pricing=pricing,
+        registration=registration,
+        is_full=is_full,
+        available_spots=available_spots
     )
+
+
+@events_bp.route('/<string:slug>/register', methods=['POST'])
+@login_required
+def register_to_event(slug):
+    """Registrar usuario a un evento"""
+    ensure_models()
+    event = Event.query.filter_by(slug=slug).first_or_404()
+    membership = current_user.get_active_membership()
+    membership_type = membership.membership_type if membership else None
+    
+    # Verificar si ya está registrado
+    existing_registration = EventRegistration.query.filter_by(
+        event_id=event.id,
+        user_id=current_user.id
+    ).first() if EventRegistration else None
+    
+    if existing_registration:
+        flash('Ya estás registrado en este evento.', 'info')
+        return redirect(url_for('events.event_detail', slug=slug))
+    
+    # Verificar capacidad
+    if event.capacity and event.capacity > 0:
+        registered_count = EventRegistration.query.filter_by(
+            event_id=event.id,
+            registration_status='confirmed'
+        ).count() if EventRegistration else 0
+        if registered_count >= event.capacity:
+            flash('Lo sentimos, este evento ya está lleno.', 'error')
+            return redirect(url_for('events.event_detail', slug=slug))
+    
+    # Calcular precio con descuentos
+    pricing = event.pricing_for_membership(membership_type)
+    base_price = pricing['base_price']
+    final_price = pricing['final_price']
+    discount_applied = base_price - final_price
+    
+    # Crear registro
+    registration = EventRegistration(
+        event_id=event.id,
+        user_id=current_user.id,
+        base_price=base_price,
+        final_price=final_price,
+        discount_applied=discount_applied,
+        membership_type=membership_type,
+        registration_status='pending' if final_price > 0 else 'confirmed'
+    )
+    
+    db.session.add(registration)
+    
+    # Actualizar contador de registrados
+    if event.registered_count is None:
+        event.registered_count = 0
+    event.registered_count += 1
+    
+    # Log de actividad
+    ActivityLog.log_activity(
+        current_user.id,
+        'register_event',
+        'event',
+        event.id,
+        f'Usuario registrado al evento: {event.title}',
+        request
+    )
+    
+    db.session.commit()
+    
+    flash('Te has registrado exitosamente al evento. Recibirás un email de confirmación.', 'success')
+    return redirect(url_for('events.event_detail', slug=slug))
+
+
+@events_bp.route('/<string:slug>/cancel-registration', methods=['POST'])
+@login_required
+def cancel_event_registration(slug):
+    """Cancelar registro a un evento"""
+    ensure_models()
+    event = Event.query.filter_by(slug=slug).first_or_404()
+    registration = EventRegistration.query.filter_by(
+        event_id=event.id,
+        user_id=current_user.id
+    ).first_or_404() if EventRegistration else None
+    
+    if not registration:
+        flash('No tienes un registro activo para este evento.', 'error')
+        return redirect(url_for('events.event_detail', slug=slug))
+    
+    registration.registration_status = 'cancelled'
+    
+    # Actualizar contador
+    if event.registered_count and event.registered_count > 0:
+        event.registered_count -= 1
+    
+    # Log de actividad
+    ActivityLog.log_activity(
+        current_user.id,
+        'cancel_event_registration',
+        'event',
+        event.id,
+        f'Registro cancelado al evento: {event.title}',
+        request
+    )
+    
+    db.session.commit()
+    
+    flash('Tu registro al evento ha sido cancelado.', 'info')
+    return redirect(url_for('events.event_detail', slug=slug))
 
 
 # ------------------------------------------------------------------------------

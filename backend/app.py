@@ -140,7 +140,7 @@ class Subscription(db.Model):
 
 # Modelos de Eventos
 class Event(db.Model):
-    """Modelo para eventos/citas"""
+    """Modelo para eventos según el diagrama de flujo - 5 pasos: Evento, Descripción, Publicidad, Certificado, Kahoot"""
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     slug = db.Column(db.String(200), unique=True, nullable=False)
@@ -156,10 +156,30 @@ class Event(db.Model):
     contact_phone = db.Column(db.String(20))
     location = db.Column(db.String(200))
     country = db.Column(db.String(100))
+    # Campos adicionales según diagrama
+    venue = db.Column(db.String(200))  # Sede o Universidad
+    university = db.Column(db.String(200))  # Universidad organizadora
     is_virtual = db.Column(db.Boolean, default=False)
     has_certificate = db.Column(db.Boolean, default=False)
     certificate_instructions = db.Column(db.Text)
+    certificate_template = db.Column(db.String(500))  # Template del certificado
+    # Integración Kahoot
+    kahoot_enabled = db.Column(db.Boolean, default=False)
+    kahoot_link = db.Column(db.String(500))
+    kahoot_required = db.Column(db.Boolean, default=False)  # Si es obligatorio participar
+    # Flujo de 5 pasos
+    step_1_event_completed = db.Column(db.Boolean, default=False)  # 1. Evento
+    step_2_description_completed = db.Column(db.Boolean, default=False)  # 2. Descripción
+    step_3_publicity_completed = db.Column(db.Boolean, default=False)  # 3. Publicidad
+    step_4_certificate_completed = db.Column(db.Boolean, default=False)  # 4. Certificado
+    step_5_kahoot_completed = db.Column(db.Boolean, default=False)  # 5. Kahoot
+    # Salidas del evento (Carteles, Revistas, Libros)
+    generates_poster = db.Column(db.Boolean, default=False)
+    generates_magazine = db.Column(db.Boolean, default=False)
+    generates_book = db.Column(db.Boolean, default=False)
+    # Capacidad y registro
     capacity = db.Column(db.Integer, default=0)
+    registered_count = db.Column(db.Integer, default=0)
     visibility = db.Column(db.String(20), default='members')  # members, public
     publish_status = db.Column(db.String(20), default='draft')  # draft, published, archived
     featured = db.Column(db.Boolean, default=False)
@@ -219,25 +239,40 @@ class EventImage(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Discount(db.Model):
-    """Descuentos reutilizables"""
+    """Descuentos reutilizables - Sistema de descuentos por categorías según diagrama:
+    Básico (Ba), Pro 10%, R 20%, DX 30%"""
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     code = db.Column(db.String(50), unique=True)
     description = db.Column(db.Text)
     discount_type = db.Column(db.String(20), default='percentage')  # percentage, fixed
     value = db.Column(db.Float, nullable=False)
-    membership_tier = db.Column(db.String(50))  # basic, pro, premium, deluxe
-    category = db.Column(db.String(50), default='event')
+    membership_tier = db.Column(db.String(50))  # basic, pro, premium, deluxe, r, dx
+    category = db.Column(db.String(50), default='event')  # event, appointment, service
     applies_automatically = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
     max_uses = db.Column(db.Integer)
+    current_uses = db.Column(db.Integer, default=0)  # Contador de usos
     start_date = db.Column(db.DateTime)
     end_date = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relación con eventos
+    # Relación con eventos y citas
     events = db.relationship('EventDiscount', backref='discount', lazy=True)
+    
+    def can_use(self):
+        """Verifica si el descuento puede ser usado"""
+        if not self.is_active:
+            return False
+        if self.max_uses and self.current_uses >= self.max_uses:
+            return False
+        now = datetime.utcnow()
+        if self.start_date and now < self.start_date:
+            return False
+        if self.end_date and now > self.end_date:
+            return False
+        return True
 
 class EventDiscount(db.Model):
     """Relación muchos a muchos entre eventos y descuentos"""
@@ -246,6 +281,161 @@ class EventDiscount(db.Model):
     discount_id = db.Column(db.Integer, db.ForeignKey('discount.id'), nullable=False)
     priority = db.Column(db.Integer, default=1)  # Orden de aplicación si hay múltiples
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# ---------------------------------------------------------------------------
+# Modelos adicionales para eventos según el diagrama de flujo
+# ---------------------------------------------------------------------------
+class EventParticipant(db.Model):
+    """Participantes de eventos con categorías (participantes, asistentes, ponentes)"""
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    participation_category = db.Column(db.String(50), nullable=False)  # participant, attendee, speaker
+    registration_date = db.Column(db.DateTime, default=datetime.utcnow)
+    check_in_time = db.Column(db.DateTime)  # Hora de llegada/check-in
+    check_out_time = db.Column(db.DateTime)  # Hora de salida/check-out
+    attendance_confirmed = db.Column(db.Boolean, default=False)
+    payment_status = db.Column(db.String(20), default='pending')  # pending, paid, refunded
+    payment_amount = db.Column(db.Float, default=0.0)
+    discount_applied = db.Column(db.Float, default=0.0)
+    membership_type_at_registration = db.Column(db.String(50))  # Para aplicar descuentos históricos
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    event = db.relationship('Event', backref='participants')
+    user = db.relationship('User', backref='event_participations')
+    
+    __table_args__ = (
+        db.UniqueConstraint('event_id', 'user_id', name='uq_event_user'),
+    )
+
+
+class EventSpeaker(db.Model):
+    """Ponentes/Exponentes de eventos"""
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Puede ser externo
+    name = db.Column(db.String(200), nullable=False)
+    email = db.Column(db.String(120))
+    bio = db.Column(db.Text)
+    photo_url = db.Column(db.String(500))
+    organization = db.Column(db.String(200))  # Sede o Universidad
+    country = db.Column(db.String(100))
+    title = db.Column(db.String(200))  # Título de la presentación
+    topic_description = db.Column(db.Text)  # Información del tema
+    presentation_time = db.Column(db.DateTime)  # Hora de la presentación
+    duration_minutes = db.Column(db.Integer, default=30)
+    sort_order = db.Column(db.Integer, default=0)
+    is_confirmed = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    event = db.relationship('Event', backref='speakers')
+    user = db.relationship('User', backref='speaker_appearances')
+
+
+class EventCertificate(db.Model):
+    """Certificados generados para participantes de eventos"""
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
+    participant_id = db.Column(db.Integer, db.ForeignKey('event_participant.id'), nullable=False)
+    certificate_number = db.Column(db.String(100), unique=True, nullable=False)
+    certificate_url = db.Column(db.String(500))  # URL del PDF generado
+    preview_url = db.Column(db.String(500))  # URL del preview
+    issued_date = db.Column(db.DateTime, default=datetime.utcnow)
+    issued_by = db.Column(db.Integer, db.ForeignKey('user.id'))  # Admin que emitió
+    email_sent = db.Column(db.Boolean, default=False)
+    email_sent_at = db.Column(db.DateTime)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    event = db.relationship('Event', backref='certificates')
+    participant = db.relationship('EventParticipant', backref='certificates')
+    issuer = db.relationship('User', backref='certificates_issued')
+
+
+class EventWorkshop(db.Model):
+    """Talleres dentro de eventos"""
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    instructor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    instructor_name = db.Column(db.String(200))  # Si es externo
+    start_datetime = db.Column(db.DateTime, nullable=False)
+    end_datetime = db.Column(db.DateTime, nullable=False)
+    location = db.Column(db.String(200))  # Sala, link virtual, etc.
+    capacity = db.Column(db.Integer, default=0)
+    registered_count = db.Column(db.Integer, default=0)
+    price = db.Column(db.Float, default=0.0)
+    is_included = db.Column(db.Boolean, default=True)  # Si está incluido en el evento
+    sort_order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    event = db.relationship('Event', backref='workshops')
+    instructor = db.relationship('User', backref='workshops_taught')
+
+
+class EventTopic(db.Model):
+    """Temas/Presentaciones de eventos"""
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
+    speaker_id = db.Column(db.Integer, db.ForeignKey('event_speaker.id'), nullable=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    topic_type = db.Column(db.String(50))  # presentation, panel, keynote, etc.
+    start_time = db.Column(db.DateTime)
+    duration_minutes = db.Column(db.Integer, default=30)
+    sort_order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    event = db.relationship('Event', backref='topics')
+    speaker = db.relationship('EventSpeaker', backref='topics')
+
+
+class EventRegistration(db.Model):
+    """Registro completo de eventos con flujo de email y almacenamiento"""
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    registration_date = db.Column(db.DateTime, default=datetime.utcnow)
+    registration_status = db.Column(db.String(20), default='pending')  # pending, confirmed, cancelled, completed
+    # Flujo de emails
+    confirmation_email_sent = db.Column(db.Boolean, default=False)
+    confirmation_email_sent_at = db.Column(db.DateTime)
+    reminder_email_sent = db.Column(db.Boolean, default=False)
+    reminder_email_sent_at = db.Column(db.DateTime)
+    certificate_email_sent = db.Column(db.Boolean, default=False)
+    certificate_email_sent_at = db.Column(db.DateTime)
+    # Integración Kahoot
+    kahoot_link = db.Column(db.String(500))
+    kahoot_participated = db.Column(db.Boolean, default=False)
+    kahoot_score = db.Column(db.Integer)
+    # Descuentos aplicados
+    base_price = db.Column(db.Float, default=0.0)
+    discount_applied = db.Column(db.Float, default=0.0)
+    final_price = db.Column(db.Float, default=0.0)
+    membership_type = db.Column(db.String(50))
+    discount_code_used = db.Column(db.String(50))
+    # Pagos
+    payment_status = db.Column(db.String(20), default='pending')
+    payment_method = db.Column(db.String(50))
+    payment_reference = db.Column(db.String(100))
+    payment_date = db.Column(db.DateTime)
+    # Datos adicionales
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    event = db.relationship('Event', backref='registrations')
+    user = db.relationship('User', backref='event_registrations')
+    
+    __table_args__ = (
+        db.UniqueConstraint('event_id', 'user_id', name='uq_event_registration'),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -409,7 +599,7 @@ class AppointmentSlot(db.Model):
 
 
 class Appointment(db.Model):
-    """Reservas realizadas por miembros."""
+    """Reservas realizadas por miembros - Modelo inspirado en Odoo."""
     id = db.Column(db.Integer, primary_key=True)
     reference = db.Column(db.String(40), unique=True, default=lambda: secrets.token_hex(4).upper())
     appointment_type_id = db.Column(db.Integer, db.ForeignKey('appointment_type.id'), nullable=False)
@@ -420,16 +610,36 @@ class Appointment(db.Model):
     is_group = db.Column(db.Boolean, default=False)
     start_datetime = db.Column(db.DateTime, nullable=False)
     end_datetime = db.Column(db.DateTime, nullable=False)
-    status = db.Column(db.String(20), default='pending')  # pending, confirmed, cancelled, completed
+    status = db.Column(db.String(20), default='pending')  # pending, confirmed, cancelled, completed, no_show
     advisor_confirmed = db.Column(db.Boolean, default=False)
     advisor_confirmed_at = db.Column(db.DateTime)
     cancellation_reason = db.Column(db.Text)
+    cancelled_by = db.Column(db.String(20))  # user, advisor, system
+    cancelled_at = db.Column(db.DateTime)
     base_price = db.Column(db.Float, default=0.0)
     final_price = db.Column(db.Float, default=0.0)
     discount_applied = db.Column(db.Float, default=0.0)
-    payment_status = db.Column(db.String(20), default='pending')  # pending, paid, refunded
+    payment_status = db.Column(db.String(20), default='pending')  # pending, paid, refunded, partial
+    payment_method = db.Column(db.String(50))  # stripe, cash, bank_transfer, free
+    payment_reference = db.Column(db.String(100))
     user_notes = db.Column(db.Text)
     advisor_notes = db.Column(db.Text)
+    # Campos adicionales inspirados en Odoo
+    calendar_sync_url = db.Column(db.String(500))  # URL para sincronizar con Google Calendar, Outlook, etc.
+    calendar_event_id = db.Column(db.String(200))  # ID del evento en el calendario externo
+    reminder_sent = db.Column(db.Boolean, default=False)  # Si se envió recordatorio
+    reminder_sent_at = db.Column(db.DateTime)
+    confirmation_sent = db.Column(db.Boolean, default=False)  # Si se envió confirmación
+    confirmation_sent_at = db.Column(db.DateTime)
+    cancellation_sent = db.Column(db.Boolean, default=False)  # Si se envió notificación de cancelación
+    cancellation_sent_at = db.Column(db.DateTime)
+    meeting_url = db.Column(db.String(500))  # URL de la reunión (Zoom, Teams, etc.)
+    meeting_password = db.Column(db.String(100))  # Contraseña de la reunión si aplica
+    check_in_time = db.Column(db.DateTime)  # Hora de llegada/check-in
+    check_out_time = db.Column(db.DateTime)  # Hora de salida/check-out
+    duration_actual = db.Column(db.Integer)  # Duración real en minutos
+    rating = db.Column(db.Integer)  # Calificación del 1 al 5
+    rating_comment = db.Column(db.Text)  # Comentario de la calificación
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -439,6 +649,22 @@ class Appointment(db.Model):
     def can_user_cancel(self):
         """Permite cancelar si faltan al menos 12 horas."""
         return self.start_datetime - datetime.utcnow() > timedelta(hours=12)
+    
+    def is_past(self):
+        """Verifica si la cita ya pasó."""
+        return self.end_datetime < datetime.utcnow()
+    
+    def is_upcoming(self):
+        """Verifica si la cita está próxima (dentro de las próximas 24 horas)."""
+        now = datetime.utcnow()
+        return self.start_datetime > now and (self.start_datetime - now) <= timedelta(hours=24)
+    
+    def get_duration_minutes(self):
+        """Calcula la duración en minutos."""
+        if self.end_datetime and self.start_datetime:
+            delta = self.end_datetime - self.start_datetime
+            return int(delta.total_seconds() / 60)
+        return 0
 
 
 class AppointmentParticipant(db.Model):
@@ -561,6 +787,8 @@ def logout():
 @login_required
 def dashboard():
     """Panel de control del usuario"""
+    from app import Appointment, EventRegistration, Event
+    
     active_membership = current_user.get_active_membership()
     benefits = Benefit.query.filter_by(is_active=True).all()
     
@@ -575,12 +803,39 @@ def dashboard():
         if active_membership.end_date:
             days_remaining = (active_membership.end_date - now).days
     
+    # Estadísticas del usuario
+    upcoming_appointments = Appointment.query.filter(
+        Appointment.user_id == current_user.id,
+        Appointment.start_datetime >= now,
+        Appointment.status.in_(['pending', 'confirmed'])
+    ).order_by(Appointment.start_datetime.asc()).limit(5).all()
+    
+    past_appointments_count = Appointment.query.filter(
+        Appointment.user_id == current_user.id,
+        Appointment.start_datetime < now
+    ).count()
+    
+    upcoming_events = EventRegistration.query.join(Event).filter(
+        EventRegistration.user_id == current_user.id,
+        EventRegistration.registration_status == 'confirmed',
+        Event.start_date >= now
+    ).order_by(Event.start_date.asc()).limit(5).all()
+    
+    registered_events_count = EventRegistration.query.filter(
+        EventRegistration.user_id == current_user.id,
+        EventRegistration.registration_status == 'confirmed'
+    ).count()
+    
     return render_template('dashboard.html', 
                          membership=active_membership, 
                          benefits=benefits,
                          days_active=days_active,
                          days_remaining=days_remaining,
-                         now=now)
+                         now=now,
+                         upcoming_appointments=upcoming_appointments,
+                         past_appointments_count=past_appointments_count,
+                         upcoming_events=upcoming_events,
+                         registered_events_count=registered_events_count)
 
 @app.route('/membership')
 @login_required

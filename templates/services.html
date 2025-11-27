@@ -13,6 +13,46 @@
         </div>
     </div>
 
+    <!-- Buscador y Filtros -->
+    <div class="row mb-4">
+        <div class="col-md-8 mx-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" id="serviceSearch" class="form-control border-start-0" placeholder="Buscar servicios por nombre o descripción...">
+                        <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex flex-wrap gap-2 justify-content-center">
+                <button class="btn btn-sm btn-outline-primary filter-btn active" data-filter="all">
+                    <i class="fas fa-th"></i> Todos
+                </button>
+                <button class="btn btn-sm btn-outline-primary filter-btn" data-filter="basico">
+                    <i class="fas fa-tag"></i> Básico
+                </button>
+                <button class="btn btn-sm btn-outline-primary filter-btn" data-filter="pro">
+                    <i class="fas fa-tag"></i> Pro
+                </button>
+                <button class="btn btn-sm btn-outline-primary filter-btn" data-filter="premium">
+                    <i class="fas fa-tag"></i> Premium
+                </button>
+                <button class="btn btn-sm btn-outline-primary filter-btn" data-filter="deluxe">
+                    <i class="fas fa-tag"></i> DeLuxe
+                </button>
+            </div>
+        </div>
+    </div>
+
     {% set plans = [
         {
             'name': 'GRATIS / BÁSICO',
@@ -71,7 +111,7 @@
     ] %}
 
     {% for plan in plans %}
-    <div class="plan-section mb-5">
+    <div class="plan-section mb-5" data-plan="{{ plan.name|lower|replace(' ', '')|replace('/', '') }}">
         <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-3">
             <div>
                 <h2 class="h4 mb-1">{{ plan.name }}</h2>
@@ -104,4 +144,58 @@
     </div>
     {% endfor %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('serviceSearch');
+    const clearBtn = document.getElementById('clearSearch');
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const planSections = document.querySelectorAll('.plan-section');
+    const serviceCards = document.querySelectorAll('.service-detail-card');
+
+    // Función de búsqueda
+    function performSearch() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const activeFilter = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+
+        planSections.forEach(section => {
+            const planName = section.dataset.plan;
+            const services = section.querySelectorAll('.service-detail-card');
+            let hasVisibleServices = false;
+
+            services.forEach(card => {
+                const title = card.querySelector('h6').textContent.toLowerCase();
+                const description = card.querySelector('p').textContent.toLowerCase();
+                const matchesSearch = !searchTerm || title.includes(searchTerm) || description.includes(searchTerm);
+                const matchesFilter = activeFilter === 'all' || planName.includes(activeFilter);
+
+                if (matchesSearch && matchesFilter) {
+                    card.closest('.col-md-6').style.display = '';
+                    hasVisibleServices = true;
+                } else {
+                    card.closest('.col-md-6').style.display = 'none';
+                }
+            });
+
+            // Mostrar/ocultar sección completa
+            section.style.display = hasVisibleServices ? '' : 'none';
+        });
+    }
+
+    // Event listeners
+    searchInput.addEventListener('input', performSearch);
+    clearBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        performSearch();
+    });
+
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            filterBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            performSearch();
+        });
+    });
+});
+</script>
 {% endblock %}

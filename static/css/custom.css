@@ -234,11 +234,8 @@
     background: linear-gradient(135deg, var(--gray-900) 0%, var(--gray-800) 100%);
     color: white;
     position: relative;
-    margin-top: 40px;
-    padding-top: 20px;
-    padding-bottom: 20px;
     width: 100%;
-    clear: both;
+    margin-left: 0;
 }
 
 .footer::before {
@@ -249,12 +246,6 @@
     right: 0;
     height: 1px;
     background: linear-gradient(90deg, transparent 0%, var(--secondary-blue) 50%, transparent 100%);
-}
-
-/* Footer dentro del right-panel se ajusta automáticamente */
-#right-panel .footer {
-    margin-left: 0;
-    width: 100%;
 }
 
     /* Logo RELATIC PANAMÁ */
@@ -368,12 +359,452 @@ body {
     overflow-x: hidden;
 }
 
-/* Botón toggle del sidebar */
+/* Botón toggle del sidebar - Oculto (ahora se usa el botón dentro del menú) */
 .sidebar-toggle-btn {
+    display: none;
+}
+
+/* Left Panel - Estilo CoreUI */
+aside.left-panel {
+    background: #ffffff;
+    height: calc(100vh - 56px);
+    min-height: calc(100vh - 56px);
+    padding: 0;
+    width: 240px;
+    transition: transform 0.3s ease, width 0.3s ease;
+    position: fixed;
+    left: 0;
+    top: 56px;
+    z-index: 1020;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-shadow: 1px 0 3px rgba(0, 0, 0, 0.1);
+    border-right: 1px solid #e5e7eb;
+}
+
+/* Sidebar Brand/Logo - Estilo CoreUI */
+.sidebar-brand {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+}
+
+.sidebar-brand-full {
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+.sidebar-brand-narrow {
+    display: none;
+    justify-content: center;
+    align-items: center;
+}
+
+.sidebar-brand .menu-hamburger-btn {
+    margin: 0;
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: #595959;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.sidebar-brand .menu-hamburger-btn:hover {
+    background: #f5f5f5;
+    color: #2d3b45;
+}
+
+body.sidebar-collapsed .sidebar-brand-full {
+    display: none;
+}
+
+body.sidebar-collapsed .sidebar-brand-narrow {
+    display: flex;
+}
+
+body.sidebar-collapsed .sidebar-brand {
+    padding: 16px 8px;
+    justify-content: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-direction: column;
+    gap: 12px;
+    min-height: auto;
+}
+
+body.sidebar-collapsed .sidebar-brand .menu-hamburger-btn {
+    margin: 0;
+    color: #e0e0e0;
+}
+
+body.sidebar-collapsed .sidebar-brand .menu-hamburger-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+body.sidebar-collapsed .sidebar-brand-narrow i {
+    font-size: 24px;
+    color: #FFD700 !important;
+}
+
+.sidebar-brand-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-brand-text {
+    line-height: 1.2;
+}
+
+.sidebar-brand-text-small {
+    line-height: 1;
+    font-weight: 400;
+}
+
+body.sidebar-collapsed aside.left-panel {
+    width: 80px;
+    padding: 0;
+    background: #2d3b45;
+}
+
+/* Ocultar textos cuando el sidebar está colapsado */
+body.sidebar-collapsed .menu-title-text {
+    display: none;
+}
+
+/* Mantener títulos de sección visibles pero más pequeños cuando está colapsado */
+body.sidebar-collapsed .menu-title {
+    display: block;
+    font-size: 10px;
+    padding: 16px 8px 8px 8px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 0.5px;
+}
+
+/* Ajustar espaciado cuando está colapsado */
+body.sidebar-collapsed .navbar .navbar-nav li {
+    margin-bottom: 2px;
+}
+
+/* Centrar iconos cuando está colapsado */
+body.sidebar-collapsed .navbar .navbar-nav li > a {
+    justify-content: center;
+    padding: 12px 0;
+    text-align: center;
+    border-left: none;
+    display: flex;
+    align-items: center;
+}
+
+body.sidebar-collapsed .navbar .navbar-nav li > a .menu-icon {
+    float: none !important;
+    margin: 0 auto;
+    text-align: center;
+    width: 20px !important;
+    margin-right: 0 !important;
+    font-size: 18px !important;
+    color: #e0e0e0 !important;
+    background: transparent !important;
+    border-radius: 0;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+}
+
+/* Hover y active cuando está colapsado - estilo dark */
+body.sidebar-collapsed .navbar .navbar-nav li > a:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.sidebar-collapsed .navbar .navbar-nav li > a:hover .menu-icon {
+    color: #ffffff !important;
+}
+
+/* Active state en iconos colapsados */
+body.sidebar-collapsed .navbar .navbar-nav > .active > a {
+    background: rgba(0, 142, 226, 0.2) !important;
+}
+
+body.sidebar-collapsed .navbar .navbar-nav > .active > a .menu-icon {
+    color: #008ee2 !important;
+}
+
+/* Nav Groups - Estilo CoreUI */
+.nav-group {
+    position: relative;
+}
+
+.nav-group-toggle {
+    cursor: pointer;
+    user-select: none;
+}
+
+.nav-group-toggle .menu-arrow {
+    float: right;
+    margin-top: 2px;
+    transition: transform 0.3s ease;
+    font-size: 12px;
+    color: #8b969e;
+}
+
+.nav-group.show .menu-arrow {
+    transform: rotate(180deg);
+}
+
+.nav-group-items {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: #f8f9fa;
+}
+
+.nav-group.show .nav-group-items {
+    max-height: 1000px;
+    padding: 4px 0;
+}
+
+.nav-group-items .nav-item {
+    margin: 0;
+}
+
+.nav-group-items .nav-link {
+    padding: 8px 20px 8px 50px !important;
+    font-size: 14px;
+    color: #595959;
+    position: relative;
+}
+
+.nav-group-items .nav-link:hover {
+    background: #f5f5f5;
+    color: #2d3b45;
+}
+
+.nav-group-items .nav-link.active {
+    background: #e8f4f8;
+    color: #008ee2;
+    font-weight: 500;
+}
+
+.nav-group-items .nav-link.active::before {
+    content: '';
     position: absolute;
-    top: 15px;
-    right: 15px;
-    z-index: 1031;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #008ee2;
+}
+
+/* Ocultar submenús cuando está colapsado */
+body.sidebar-collapsed .nav-group-items {
+    display: none !important;
+}
+
+body.sidebar-collapsed .menu-arrow {
+    display: none !important;
+}
+
+body.sidebar-collapsed .nav-group-toggle {
+    cursor: default;
+}
+
+/* Ajustar nav-link cuando está colapsado */
+body.sidebar-collapsed .navbar .navbar-nav .nav-link {
+    padding: 12px 0 !important;
+    justify-content: center;
+}
+
+.submenu li {
+    margin: 0;
+    padding: 0;
+}
+
+.submenu li a {
+    display: block;
+    padding: 10px 20px 10px 50px;
+    color: #595959;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.submenu li a:hover {
+    background: #e8f4f8;
+    color: #008ee2;
+    padding-left: 55px;
+}
+
+.submenu li.active a {
+    background: #e8f4f8;
+    color: #008ee2;
+    font-weight: 500;
+    border-left: 3px solid #008ee2;
+}
+
+/* Ocultar submenús cuando está colapsado */
+body.sidebar-collapsed .submenu {
+    display: none;
+}
+
+body.sidebar-collapsed .menu-arrow {
+    display: none;
+}
+
+/* Dropdown cuando está colapsado - estilo similar a la imagen */
+body.sidebar-collapsed .menu-item-has-children {
+    position: relative;
+}
+
+body.sidebar-collapsed .menu-item-has-children:hover .submenu-dropdown {
+    display: block;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.submenu-dropdown {
+    display: none;
+    position: fixed;
+    left: 80px;
+    background: #2d3b45;
+    min-width: 200px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 1050;
+    padding: 8px 0;
+    margin-top: -40px;
+}
+
+.submenu-dropdown::before {
+    content: '';
+    position: absolute;
+    left: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 8px solid #2d3b45;
+}
+
+.submenu-dropdown .dropdown-title {
+    padding: 8px 16px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 4px;
+}
+
+.submenu-dropdown a {
+    display: block;
+    padding: 10px 16px;
+    color: #e0e0e0;
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.submenu-dropdown a:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    padding-left: 20px;
+}
+
+.submenu-dropdown a.active {
+    background: rgba(0, 142, 226, 0.2);
+    color: #008ee2;
+    border-left: 3px solid #008ee2;
+}
+
+aside.left-panel .navbar {
+    background: transparent;
+    border-radius: 0;
+    border: none;
+    display: block;
+    margin: 0;
+    padding: 8px 0;
+}
+
+/* Botón hamburguesa dentro del menú - Estilo Canvas */
+.menu-hamburger-btn {
+    background: transparent;
+    color: #595959;
+    border: none;
+    border-radius: 4px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: 12px 12px 12px auto;
+}
+
+.menu-hamburger-btn:hover {
+    background: #f5f5f5;
+    color: #2d3b45;
+}
+
+/* Botón hamburguesa cuando está colapsado - estilo dark */
+body.sidebar-collapsed .menu-hamburger-btn {
+    color: #e0e0e0;
+}
+
+body.sidebar-collapsed .menu-hamburger-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.menu-hamburger-btn i {
+    font-size: 16px;
+}
+
+/* Mantener botón hamburguesa visible siempre */
+body.sidebar-collapsed .menu-hamburger-btn {
+    display: flex;
+}
+
+/* Botón para expandir sidebar cuando está colapsado */
+.expand-sidebar-btn {
+    position: fixed;
+    top: 70px;
+    left: 10px;
+    z-index: 1030;
     background: var(--royal-blue);
     color: #ffffff;
     border: none;
@@ -388,73 +819,43 @@ body {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.sidebar-toggle-btn:hover {
+.expand-sidebar-btn:hover {
     background: var(--dark-blue);
     transform: scale(1.1);
     box-shadow: 0 4px 12px rgba(65, 105, 225, 0.4);
 }
 
-.sidebar-toggle-btn i {
+.expand-sidebar-btn i {
     font-size: 18px;
-    transition: transform 0.3s ease;
 }
 
-/* Left Panel - Estilo Sufee */
-aside.left-panel {
-    background: #1f2937;
-    height: calc(100vh - 56px);
-    min-height: calc(100vh - 56px);
-    padding: 0 20px;
-    width: 240px;
-    transition: width 0.3s ease, padding 0.3s ease;
-    position: fixed;
-    left: 0;
-    top: 56px;
-    z-index: 1020;
-    overflow-y: auto;
-    overflow-x: hidden;
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-}
-
-body.sidebar-collapsed aside.left-panel {
-    width: 70px;
-    padding: 0 10px;
-}
-
-aside.left-panel .navbar {
-    background: transparent;
-    border-radius: 0;
-    border: none;
-    display: block;
-    margin: 0;
-    padding: 20px 0;
+/* Ocultar botón de expandir (ya no es necesario porque el sidebar se mantiene visible) */
+.expand-sidebar-btn {
+    display: none !important;
 }
 
 .navbar .navbar-header {
-    float: none;
-    text-align: center;
-    width: 100%;
+    display: none;
 }
 
 aside.left-panel .navbar .navbar-brand {
-    border-bottom: 1px solid #374151;
-    color: #ffffff !important;
-    font-family: 'Open Sans', sans-serif;
-    font-size: 24px;
-    font-weight: 700;
+    border-bottom: 1px solid #e5e7eb;
+    color: #2d3b45 !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 18px;
+    font-weight: 600;
     float: none;
-    line-height: 60px;
+    line-height: 1.5;
     margin: 0;
     text-align: center;
-    text-transform: uppercase;
-    display: block;
-    min-height: 70px;
-    padding: 0;
+    text-transform: none;
     display: flex;
     justify-content: center;
     align-items: center;
     position: relative;
-    letter-spacing: 2px;
+    letter-spacing: 0;
+    padding: 16px 20px;
+    min-height: auto;
 }
 
 .navbar .navbar-brand span {
@@ -466,19 +867,29 @@ aside.left-panel .navbar .navbar-brand {
 }
 
 aside.left-panel .navbar .menu-title {
-    border-bottom: 1px solid #374151;
-    color: #9ca3af;
-    clear: both;
-    display: block;
-    font-family: 'Open Sans', sans-serif;
+    border-bottom: none;
+    color: #8b969e;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-size: 12px;
     font-weight: 700;
-    line-height: 30px;
-    padding: 15px 0 8px 0;
+    line-height: 1.5;
+    padding: 24px 20px 12px 20px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 8px;
+    margin-bottom: 4px;
+    color: #8b969e;
+    clear: both;
+    display: block;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.5;
+    padding: 20px 20px 8px 20px;
     text-transform: uppercase;
     width: 100%;
-    letter-spacing: 1px;
-    margin-bottom: 5px;
+    letter-spacing: 0.5px;
+    margin-top: 8px;
 }
 
 .navbar .navbar-nav {
@@ -492,125 +903,87 @@ aside.left-panel .navbar .menu-title {
 
 .navbar .navbar-nav li.active .menu-icon,
 .navbar .navbar-nav li:hover .menu-icon {
-    color: #fff !important;
+    color: #008ee2 !important;
 }
 
-aside.left-panel .navbar .navbar-nav li > a {
+aside.left-panel .navbar .navbar-nav li > a,
+aside.left-panel .navbar .navbar-nav .nav-link {
     background: none !important;
-    color: #d1d5db !important;
-    display: inline-block;
-    font-family: 'Open Sans', sans-serif;
-    font-size: 14px;
-    line-height: 24px;
-    padding: 8px 0;
+    color: #2d3b45 !important;
+    display: flex;
+    align-items: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    padding: 8px 20px;
     position: relative;
     width: 100%;
     text-decoration: none;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     border-left: 3px solid transparent;
-    padding-left: 15px;
+    border-radius: 0;
 }
 
 aside.left-panel .navbar .navbar-nav li > a:hover,
-aside.left-panel .navbar .navbar-nav li > a:hover .menu-icon {
-    color: #ffffff !important;
-    background-color: rgba(65, 105, 225, 0.1);
-    border-left-color: var(--royal-blue);
+aside.left-panel .navbar .navbar-nav li > a:hover .menu-icon,
+aside.left-panel .navbar .navbar-nav .nav-link:hover,
+aside.left-panel .navbar .navbar-nav .nav-link:hover .menu-icon {
+    color: #2d3b45 !important;
+    background-color: #f5f5f5;
+    border-left-color: #008ee2;
 }
 
 aside.left-panel .navbar .navbar-nav li > a .menu-icon {
-    color: #9ca3af;
+    color: #595959;
     float: left;
-    margin-top: 6px;
-    width: 40px;
-    text-align: left;
+    margin-right: 12px;
+    width: 20px;
+    text-align: center;
     z-index: 9;
-    font-size: 16px;
-    transition: opacity 0.3s ease;
+    font-size: 18px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    display: inline-block;
+}
+
+/* Centrar iconos cuando el sidebar está colapsado */
+body.sidebar-collapsed .navbar .navbar-nav li > a {
+    justify-content: center;
+    padding: 16px 0;
+    text-align: center;
+    border-left: none;
 }
 
 .navbar .navbar-nav li > a .menu-title-text {
     font-size: 14px;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-
-/* Modo canvas: ocultar texto pero mantener iconos visibles */
-body.sidebar-collapsed aside.left-panel .menu-title-text {
-    opacity: 0;
-    visibility: hidden;
-    width: 0;
-    height: 0;
-    overflow: hidden;
-    margin: 0;
-    padding: 0;
-    display: none;
-}
-
-body.sidebar-collapsed aside.left-panel .menu-title {
-    opacity: 0;
-    visibility: hidden;
-    width: 0;
-    height: 0;
-    overflow: hidden;
-    margin: 0;
-    padding: 0;
-    display: none;
-    border: none;
-}
-
-body.sidebar-collapsed aside.left-panel .navbar .navbar-nav li > a {
-    padding: 12px 0;
-    justify-content: center;
-    display: flex;
-    border-left: none;
-}
-
-body.sidebar-collapsed aside.left-panel .navbar .navbar-nav li > a .menu-icon {
-    float: none;
-    margin: 0;
-    width: auto;
-    text-align: center;
-}
-
-body.sidebar-collapsed aside.left-panel .navbar .navbar-nav li > a:hover {
-    border-left: none;
-    border-radius: 8px;
-    background-color: rgba(65, 105, 225, 0.2);
-}
-
-body.sidebar-collapsed aside.left-panel .navbar .navbar-nav > .active > a {
-    border-left: none;
-    border-radius: 8px;
-    background-color: rgba(65, 105, 225, 0.3);
-}
-
-body.sidebar-collapsed aside.left-panel .navbar .navbar-nav > .active > a .menu-icon {
-    color: var(--royal-blue) !important;
+    transition: all 0.3s ease;
 }
 
 aside.left-panel .navbar .navbar-nav > .active > a,
 aside.left-panel .navbar .navbar-nav > .active > a:focus,
-aside.left-panel .navbar .navbar-nav > .active > a:hover {
-    color: #ffffff !important;
-    background-color: rgba(65, 105, 225, 0.2);
-    border-left-color: var(--royal-blue);
-    font-weight: 600;
+aside.left-panel .navbar .navbar-nav > .active > a:hover,
+aside.left-panel .navbar .navbar-nav .nav-link.active {
+    color: #008ee2 !important;
+    background-color: #e8f4f8;
+    border-left-color: #008ee2;
+    font-weight: 500;
 }
 
-aside.left-panel .navbar .navbar-nav > .active > a .menu-icon {
-    color: var(--royal-blue) !important;
+aside.left-panel .navbar .navbar-nav > .active > a .menu-icon,
+aside.left-panel .navbar .navbar-nav .nav-link.active .menu-icon {
+    color: #008ee2 !important;
 }
 
 /* Ajustes cuando el sidebar está colapsado */
 body.sidebar-collapsed #right-panel {
-    margin-left: 70px;
-    width: calc(100% - 70px);
+    margin-left: 80px;
+    width: calc(100% - 80px);
 }
 
 #right-panel {
     margin-left: 240px;
     margin-top: 56px;
-    transition: margin-left 0.3s ease, width 0.3s ease;
+    transition: margin-left 0.3s ease;
     width: calc(100% - 240px);
     min-height: calc(100vh - 56px);
 }
@@ -894,17 +1267,14 @@ body.open #right-panel {
     align-items: center;
     cursor: pointer;
     transition: transform 0.2s ease;
-    color: inherit;
+    color: #2d3b45;
+    text-decoration: none;
 }
 
 .service-icon-item:hover {
     transform: translateY(-5px);
     text-decoration: none;
-}
-
-.service-icon-item:hover .service-icon-label {
-    color: var(--royal-blue);
-    font-weight: 600;
+    color: #2d3b45;
 }
 
 .service-icon-circle {
@@ -943,8 +1313,6 @@ body.open #right-panel {
 .bg-blue { background: #3b82f6; }
 .bg-dark-blue { background: #1e3a8a; }
 .bg-brown { background: #d97706; }
-.bg-indigo { background: #6366f1; }
-.bg-cyan { background: #06b6d4; }
 
 /* Recent Section */
 .recent-section {
@@ -1023,23 +1391,43 @@ body.open #right-panel {
     text-align: center;
 }
 
+/* Footer adjustments */
+.footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    clear: both;
+}
 
-/* Scrollbar personalizado para sidebar */
+/* Ajuste del footer cuando hay sidebar */
+#right-panel .footer {
+    margin-left: 0;
+    width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+#right-panel .footer .container {
+    padding-left: 30px;
+    padding-right: 30px;
+}
+
+/* Scrollbar personalizado para sidebar - Estilo Canvas */
 aside.left-panel::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
 }
 
 aside.left-panel::-webkit-scrollbar-track {
-    background: #1f2937;
+    background: #f5f5f5;
 }
 
 aside.left-panel::-webkit-scrollbar-thumb {
-    background: #4b5563;
-    border-radius: 3px;
+    background: #d1d5db;
+    border-radius: 4px;
 }
 
 aside.left-panel::-webkit-scrollbar-thumb:hover {
-    background: #6b7280;
+    background: #9ca3af;
 }
 
 /* Ajustes adicionales para el navbar */
@@ -1064,8 +1452,8 @@ body:not(:has(.left-panel)) main {
 /* Responsive improvements */
 @media (max-width: 768px) {
     .sidebar-toggle-btn {
-        top: 10px;
-        right: 10px;
+        top: 65px;
+        left: 10px;
         width: 35px;
         height: 35px;
     }
@@ -1074,8 +1462,17 @@ body:not(:has(.left-panel)) main {
         font-size: 16px;
     }
     
+    body:not(.sidebar-collapsed) .sidebar-toggle-btn {
+        left: 290px;
+    }
+    
     aside.left-panel {
-        width: 260px;
+        width: 220px;
+    }
+    
+    #right-panel {
+        margin-left: 220px;
+        width: calc(100% - 220px);
     }
     
     #right-panel {
@@ -1085,7 +1482,7 @@ body:not(:has(.left-panel)) main {
     
     body.sidebar-collapsed aside.left-panel {
         width: 70px;
-        padding: 0 10px;
+        padding: 0;
     }
     
     body.sidebar-collapsed #right-panel {
@@ -1157,4 +1554,118 @@ body:not(:has(.left-panel)) main {
         top: 0;
         min-height: auto;
     }
+}
+
+/* Tabla Comparativa de Planes */
+.comparison-table {
+    font-size: 0.95rem;
+}
+
+.comparison-table thead th {
+    vertical-align: middle;
+    padding: 1rem;
+}
+
+.plan-header {
+    padding: 0.75rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+}
+
+.plan-price {
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin-top: 0.25rem;
+}
+
+.comparison-table tbody td {
+    vertical-align: middle;
+    padding: 0.75rem;
+}
+
+.comparison-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Testimonios */
+.testimonial-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid var(--primary-blue);
+}
+
+.testimonial-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.testimonial-avatar {
+    font-size: 1.25rem;
+}
+
+.trust-stat h3 {
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+
+/* Buscador de Servicios */
+#serviceSearch:focus {
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 0.2rem rgba(65, 105, 225, 0.25);
+}
+
+.filter-btn.active {
+    background-color: var(--primary-blue);
+    color: white;
+    border-color: var(--primary-blue);
+}
+
+.filter-btn:hover {
+    background-color: var(--light-blue);
+    border-color: var(--primary-blue);
+}
+
+.filter-btn.active:hover {
+    background-color: var(--dark-blue);
+}
+
+/* Mejoras de Tipografía */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    line-height: 1.3;
+    color: #2d3b45;
+}
+
+.lead {
+    font-size: 1.125rem;
+    font-weight: 400;
+    line-height: 1.6;
+}
+
+/* Espaciado mejorado */
+.card-body {
+    padding: 1.5rem;
+}
+
+.section-spacing {
+    padding: 4rem 0;
+}
+
+/* CTAs mejorados */
+.btn-lg {
+    padding: 0.75rem 2rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-lg:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
