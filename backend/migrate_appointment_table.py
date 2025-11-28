@@ -116,3 +116,7 @@ def migrate_appointment_table():
 if __name__ == '__main__':
     migrate_appointment_table()
 
+
+
+
+

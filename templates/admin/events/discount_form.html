@@ -60,15 +60,19 @@
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Tipo de Membresía</label>
-                            <select name="membership_tier" class="form-select">
-                                <option value="">Todas las membresías</option>
-                                <option value="basic" {% if discount and discount.membership_tier == 'basic' %}selected{% endif %}>Básico</option>
-                                <option value="pro" {% if discount and discount.membership_tier == 'pro' %}selected{% endif %}>Pro</option>
-                                <option value="premium" {% if discount and discount.membership_tier == 'premium' %}selected{% endif %}>Premium</option>
-                                <option value="deluxe" {% if discount and discount.membership_tier == 'deluxe' %}selected{% endif %}>DeLuxe</option>
+                            <label class="form-label">Tipo de Membresía <span class="text-danger">*</span></label>
+                            <select name="membership_tier" class="form-select" required>
+                                <option value="">Todas las membresías (sin restricción)</option>
+                                <option value="basic" {% if discount and discount.membership_tier == 'basic' %}selected{% endif %}>Básico - Solo para usuarios con membresía Básica</option>
+                                <option value="pro" {% if discount and discount.membership_tier == 'pro' %}selected{% endif %}>Pro - Solo para usuarios con membresía Pro</option>
+                                <option value="premium" {% if discount and discount.membership_tier == 'premium' %}selected{% endif %}>Premium - Solo para usuarios con membresía Premium</option>
+                                <option value="deluxe" {% if discount and discount.membership_tier == 'deluxe' %}selected{% endif %}>DeLuxe - Solo para usuarios con membresía DeLuxe</option>
                             </select>
-                            <small class="form-text text-muted">Si se selecciona, el descuento solo aplica para ese tipo de membresía</small>
+                            <small class="form-text text-muted">
+                                <strong>Importante:</strong> Si seleccionas un tipo de membresía específico, este descuento se aplicará automáticamente 
+                                solo a usuarios con ese tipo de membresía cuando se registren a eventos que tengan este descuento asignado. 
+                                Si dejas "Todas las membresías", el descuento aplicará a todos pero deberá ser aplicado manualmente o por código.
+                            </small>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Categoría</label>
@@ -136,11 +140,17 @@
 
                 <div class="card">
                     <div class="card-body">
-                        <h6 class="card-title">Información</h6>
-                        <p class="card-text small text-muted">
-                            Los descuentos pueden aplicarse a eventos específicos desde el formulario de eventos.
-                            Si un descuento es "auto-aplicable" y tiene un tipo de membresía asignado, se aplicará automáticamente al calcular el precio.
-                        </p>
+                        <h6 class="card-title"><i class="fas fa-lightbulb me-2"></i>Información</h6>
+                        <div class="card-text small text-muted">
+                            <p><strong>Flujo de Descuentos:</strong></p>
+                            <ol class="mb-0">
+                                <li>Los descuentos se asignan a eventos desde el formulario de creación/edición de eventos.</li>
+                                <li>Si un descuento tiene un <strong>tipo de membresía</strong> asignado, se aplicará automáticamente cuando un usuario con esa membresía vea el precio del evento.</li>
+                                <li>Si un descuento tiene <strong>"Aplicar Automáticamente"</strong> activado, se aplicará sin necesidad de código promocional.</li>
+                                <li>Los descuentos se aplican en orden de prioridad si hay múltiples descuentos para el mismo tipo de membresía.</li>
+                            </ol>
+                            <p class="mt-2 mb-0"><strong>Nota:</strong> Todos los usuarios registrados pueden acceder a los eventos, pero los precios varían según su tipo de membresía.</p>
+                        </div>
                     </div>
                 </div>
             </div>

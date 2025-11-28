@@ -90,10 +90,17 @@
                         <h5 class="mb-0"><i class="fas fa-dollar-sign"></i> Precios y Descuentos</h5>
                     </div>
                     <div class="card-body">
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Importante:</strong> Todos los usuarios registrados pueden acceder a este evento/servicio. 
+                            El precio base se aplica a todos, pero puedes configurar descuentos específicos por tipo de membresía 
+                            (Básico, Pro, Premium, DeLuxe) desde la sección de descuentos.
+                        </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Precio Base</label>
-                                <input type="number" name="base_price" class="form-control" step="0.01" value="{{ event.base_price if event else '0.00' }}">
+                                <input type="number" name="base_price" class="form-control" step="0.01" value="{{ event.base_price if event else '0.00' }}" placeholder="0.00">
+                                <small class="form-text text-muted">Precio estándar que se aplica a todos los usuarios. Use 0.00 para eventos gratuitos.</small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Moneda</label>
@@ -104,16 +111,22 @@
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Descuentos Aplicables</label>
-                            <select name="discount_ids" class="form-select" multiple size="5">
+                            <label class="form-label">Descuentos Aplicables por Tipo de Membresía</label>
+                            <select name="discount_ids" class="form-select" multiple size="6">
                                 {% for discount in discounts %}
                                 <option value="{{ discount.id }}" 
                                         {% if event and discount.id in (event.discounts|map(attribute='discount_id')|list) %}selected{% endif %}>
-                                    {{ discount.name }} ({{ discount.value }}{{ '%' if discount.discount_type == 'percentage' else ' ' + event.currency if event else ' USD' }})
+                                    {{ discount.name }} 
+                                    {% if discount.membership_tier %}({{ discount.membership_tier|upper }}){% endif %}
+                                    - {{ discount.value }}{{ '%' if discount.discount_type == 'percentage' else ' ' + (event.currency if event else 'USD') }}
                                 </option>
                                 {% endfor %}
                             </select>
-                            <small class="form-text text-muted">Mantén presionado Ctrl (Cmd en Mac) para seleccionar múltiples descuentos</small>
+                            <small class="form-text text-muted">
+                                Mantén presionado Ctrl (Cmd en Mac) para seleccionar múltiples descuentos. 
+                                Los descuentos se aplican automáticamente según el tipo de membresía del usuario. 
+                                <a href="{{ url_for('admin_events.discounts_index') }}" target="_blank">Gestionar descuentos</a>
+                            </small>
                         </div>
                     </div>
                 </div>
@@ -187,9 +200,10 @@
                         <div class="mb-3">
                             <label class="form-label">Visibilidad</label>
                             <select name="visibility" class="form-select">
-                                <option value="members" {% if event and event.visibility == 'members' %}selected{% endif %}>Solo Miembros</option>
-                                <option value="public" {% if event and event.visibility == 'public' %}selected{% endif %}>Público</option>
+                                <option value="members" {% if event and event.visibility == 'members' %}selected{% endif %}>Solo Usuarios Registrados</option>
+                                <option value="public" {% if event and event.visibility == 'public' %}selected{% endif %}>Público (sin registro requerido)</option>
                             </select>
+                            <small class="form-text text-muted">"Solo Usuarios Registrados" permite acceso a todos los usuarios con cuenta, independientemente de su tipo de membresía. Los precios y descuentos se calculan según su membresía.</small>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Estado de Publicación</label>
@@ -216,6 +230,55 @@
                         <div class="mb-3">
                             <label class="form-label">Capacidad</label>
                             <input type="number" name="capacity" class="form-control" value="{{ event.capacity if event else '0' }}" min="0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Roles del Evento -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-users-cog"></i> Roles del Evento</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <small>Los usuarios asignados a estos roles recibirán notificaciones de todos los movimientos del evento (registros, cancelaciones, confirmaciones).</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Moderador</label>
+                            <select name="moderator_id" class="form-select">
+                                <option value="">Seleccionar moderador...</option>
+                                {% for user in users if users %}
+                                <option value="{{ user.id }}" {% if event and event.moderator_id == user.id %}selected{% endif %}>
+                                    {{ user.first_name }} {{ user.last_name }} ({{ user.email }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">Usuario responsable de moderar el evento</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Administrador del Evento</label>
+                            <select name="administrator_id" class="form-select">
+                                <option value="">Seleccionar administrador...</option>
+                                {% for user in users if users %}
+                                <option value="{{ user.id }}" {% if event and event.administrator_id == user.id %}selected{% endif %}>
+                                    {{ user.first_name }} {{ user.last_name }} ({{ user.email }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">Usuario responsable de administrar el evento</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Expositor/Conferencista Principal</label>
+                            <select name="speaker_id" class="form-select">
+                                <option value="">Seleccionar expositor...</option>
+                                {% for user in users if users %}
+                                <option value="{{ user.id }}" {% if event and event.speaker_id == user.id %}selected{% endif %}>
+                                    {{ user.first_name }} {{ user.last_name }} ({{ user.email }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">Conferencista o expositor principal del evento</small>
                         </div>
                     </div>
                 </div>

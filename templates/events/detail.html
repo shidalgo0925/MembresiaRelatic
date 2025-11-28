@@ -84,7 +84,7 @@
                                 <span class="value">{{ event.capacity }}</span>
                             </li>
                             {% endif %}
-                            {% if available_spots is not None %}
+                            {% if available_spots is not none %}
                             <li>
                                 <span class="label">Disponibles</span>
                                 <span class="value">{{ available_spots }}</span>
@@ -167,7 +167,7 @@
                                             <i class="fas fa-user-plus me-2"></i>Registrarse al Evento
                                         </button>
                                     </form>
-                                    {% if available_spots is not None and available_spots > 0 %}
+                                    {% if available_spots is not none and available_spots > 0 %}
                                         <small class="text-muted d-block mt-2 text-center">
                                             {{ available_spots }} cupo{{ 's' if available_spots > 1 else '' }} disponible{{ 's' if available_spots > 1 else '' }}
                                         </small>

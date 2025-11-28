@@ -27,3 +27,7 @@ with app.app_context():
         print(f"❌ Error al crear las tablas: {e}")
         sys.exit(1)
 
+
+
+
+

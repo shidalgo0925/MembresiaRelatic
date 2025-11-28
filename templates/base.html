@@ -93,6 +93,14 @@
                 <ul class="navbar-nav">
                     {% if current_user.is_authenticated %}
                     <li class="nav-item me-1 d-flex align-items-center">
+                        <a class="nav-link nav-icon-link position-relative" href="{{ url_for('notifications') if url_for('notifications') else '#' }}" title="Notificaciones">
+                            <i class="fas fa-bell"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-badge" style="font-size: 0.6rem; display: none;">
+                                0
+                            </span>
+                        </a>
+                    </li>
+                    <li class="nav-item me-1 d-flex align-items-center">
                         <a class="nav-link nav-icon-link" href="{{ url_for('help') }}" title="Centro de ayuda">
                             <i class="fas fa-question-circle"></i>
                         </a>
@@ -223,7 +231,7 @@
                         
                         {% if current_user.is_admin %}
                         <!-- Administración - Sección Expandible -->
-                        <li class="nav-item nav-group {% if request.endpoint in ['admin_dashboard', 'admin_users', 'admin_memberships'] or request.blueprint == 'admin_events' or request.endpoint == 'admin_events.discounts_index' %}show{% endif %}">
+                        <li class="nav-item nav-group {% if request.endpoint in ['admin_dashboard', 'admin_users', 'admin_memberships'] or request.blueprint == 'admin_events' or request.endpoint == 'admin_events.discounts_index' or request.blueprint == 'admin_appointments' %}show{% endif %}">
                             <a class="nav-link nav-group-toggle" href="#" onclick="return false;">
                                 <i class="menu-icon fa fa-cog"></i>
                                 <span class="menu-title-text">Administración</span>
@@ -253,6 +261,11 @@
                                 <li class="nav-item">
                                     <a class="nav-link {% if request.endpoint == 'admin_events.discounts_index' %}active{% endif %}" href="{{ url_for('admin_events.discounts_index') }}">
                                         <span class="menu-title-text">Descuentos</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.blueprint == 'admin_appointments' %}active{% endif %}" href="{{ url_for('admin_appointments.admin_appointments_dashboard') }}">
+                                        <span class="menu-title-text">Gestión de Citas</span>
                                     </a>
                                 </li>
                             </ul>
@@ -625,5 +638,38 @@
     </div>
 
     {% block scripts %}{% endblock %}
+    
+<script>
+// Actualizar contador de notificaciones en el navbar
+document.addEventListener('DOMContentLoaded', function() {
+    const notificationBadge = document.querySelector('.notification-badge');
+    if (notificationBadge) {
+        // Contar notificaciones basado en elementos del dashboard
+        let count = 0;
+        
+        // Verificar si hay alertas en el dashboard
+        const alerts = document.querySelectorAll('.alert');
+        if (alerts.length > 0) {
+            count = alerts.length;
+        }
+        
+        // También verificar elementos específicos que indican notificaciones
+        const membershipWarning = document.querySelector('.alert-warning');
+        const upcomingAppointments = document.querySelector('[data-appointments]');
+        const upcomingEvents = document.querySelector('[data-events]');
+        
+        if (membershipWarning) count++;
+        if (upcomingAppointments) count++;
+        if (upcomingEvents) count++;
+        
+        if (count > 0) {
+            notificationBadge.textContent = count;
+            notificationBadge.style.display = 'block';
+        } else {
+            notificationBadge.style.display = 'none';
+        }
+    }
+});
+</script>
 </body>
 </html>

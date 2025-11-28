@@ -188,13 +188,55 @@ class Event(db.Model):
     registration_deadline = db.Column(db.DateTime)
     cover_image = db.Column(db.String(500))
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    # Roles del evento: Moderador, Administrador, Expositor
+    moderator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Moderador del evento
+    administrator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Administrador del evento
+    speaker_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Expositor/Conferencista principal
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relaciones
     images = db.relationship('EventImage', backref='event', lazy=True, cascade='all, delete-orphan')
     discounts = db.relationship('EventDiscount', backref='event', lazy=True, cascade='all, delete-orphan')
-    creator = db.relationship('User', backref='created_events')
+    creator = db.relationship('User', foreign_keys=[created_by], backref='created_events')
+    moderator = db.relationship('User', foreign_keys=[moderator_id], backref='moderated_events')
+    administrator = db.relationship('User', foreign_keys=[administrator_id], backref='administered_events')
+    speaker = db.relationship('User', foreign_keys=[speaker_id], backref='speaker_events')
+    
+    def get_notification_recipients(self):
+        """Obtiene todos los usuarios que deben recibir notificaciones del evento"""
+        recipients = []
+        
+        # Creador del evento
+        if self.created_by:
+            creator = User.query.get(self.created_by)
+            if creator:
+                recipients.append(creator)
+        
+        # Moderador
+        if self.moderator_id:
+            moderator = User.query.get(self.moderator_id)
+            if moderator and moderator not in recipients:
+                recipients.append(moderator)
+        
+        # Administrador del evento
+        if self.administrator_id:
+            administrator = User.query.get(self.administrator_id)
+            if administrator and administrator not in recipients:
+                recipients.append(administrator)
+        
+        # Expositor
+        if self.speaker_id:
+            speaker = User.query.get(self.speaker_id)
+            if speaker and speaker not in recipients:
+                recipients.append(speaker)
+        
+        # Si no hay roles asignados, notificar a todos los administradores del sistema
+        if not recipients:
+            admins = User.query.filter_by(is_admin=True).all()
+            recipients.extend(admins)
+        
+        return recipients
     
     def cover_url(self):
         """Retorna la URL de la imagen de portada"""
@@ -252,6 +294,7 @@ class Discount(db.Model):
     applies_automatically = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
     max_uses = db.Column(db.Integer)
+    uses = db.Column(db.Integer, default=0)  # Alias para compatibilidad con esquema antiguo
     current_uses = db.Column(db.Integer, default=0)  # Contador de usos
     start_date = db.Column(db.DateTime)
     end_date = db.Column(db.DateTime)
@@ -265,7 +308,9 @@ class Discount(db.Model):
         """Verifica si el descuento puede ser usado"""
         if not self.is_active:
             return False
-        if self.max_uses and self.current_uses >= self.max_uses:
+        # Usar current_uses como fuente de verdad, con fallback a uses
+        uses_count = self.current_uses if hasattr(self, 'current_uses') and self.current_uses is not None else (self.uses if hasattr(self, 'uses') and self.uses is not None else 0)
+        if self.max_uses and uses_count >= self.max_uses:
             return False
         now = datetime.utcnow()
         if self.start_date and now < self.start_date:
@@ -394,6 +439,29 @@ class EventTopic(db.Model):
     
     event = db.relationship('Event', backref='topics')
     speaker = db.relationship('EventSpeaker', backref='topics')
+
+
+class Notification(db.Model):
+    """Sistema de notificaciones para eventos y movimientos del sistema"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=True)  # NULL si no es relacionado a evento
+    notification_type = db.Column(db.String(50), nullable=False)  # event_registration, event_cancellation, event_confirmation, event_update, etc.
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    email_sent = db.Column(db.Boolean, default=False)
+    email_sent_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relaciones
+    user = db.relationship('User', backref='notifications')
+    event = db.relationship('Event', backref='notifications')
+    
+    def mark_as_read(self):
+        """Marcar notificación como leída"""
+        self.is_read = True
+        db.session.commit()
 
 
 class EventRegistration(db.Model):
@@ -826,6 +894,12 @@ def dashboard():
         EventRegistration.registration_status == 'confirmed'
     ).count()
     
+    # Obtener todos los eventos públicos para el calendario
+    all_public_events = Event.query.filter(
+        Event.publish_status == 'published',
+        Event.start_date.isnot(None)
+    ).order_by(Event.start_date.asc()).all()
+    
     # Detectar si es un usuario nuevo (creado en las últimas 24 horas)
     is_new_user = False
     if current_user.created_at:
@@ -846,6 +920,7 @@ def dashboard():
                          past_appointments_count=past_appointments_count,
                          upcoming_events=upcoming_events,
                          registered_events_count=registered_events_count,
+                         all_public_events=all_public_events,
                          show_onboarding=show_onboarding,
                          is_new_user=is_new_user)
 
@@ -1115,6 +1190,254 @@ def handle_successful_payment(payment_intent):
     except Exception as e:
         print(f"Error handling payment: {e}")
 
+class NotificationEngine:
+    """Motor de notificaciones para eventos y movimientos del sistema"""
+    
+    @staticmethod
+    def notify_event_registration(event, user, registration):
+        """Notificar a moderador, administrador y expositor del evento sobre un nuevo registro"""
+        try:
+            # Obtener todos los responsables del evento
+            recipients = event.get_notification_recipients()
+            
+            if not recipients:
+                print(f"⚠️ No se encontraron responsables para el evento {event.id}")
+                return
+            
+            # Crear notificaciones y enviar emails a todos los responsables
+            for recipient in recipients:
+                # Crear notificación en la base de datos
+                notification = Notification(
+                    user_id=recipient.id,
+                    event_id=event.id,
+                    notification_type='event_registration',
+                    title=f'Nuevo registro al evento: {event.title}',
+                    message=f'El usuario {user.first_name} {user.last_name} ({user.email}) se ha registrado al evento "{event.title}". Estado: {registration.registration_status}.'
+                )
+                db.session.add(notification)
+                
+                # Enviar email al responsable
+                try:
+                    # Determinar el rol del destinatario
+                    role = "Responsable"
+                    if event.moderator_id == recipient.id:
+                        role = "Moderador"
+                    elif event.administrator_id == recipient.id:
+                        role = "Administrador"
+                    elif event.speaker_id == recipient.id:
+                        role = "Expositor"
+                    elif event.created_by == recipient.id:
+                        role = "Creador"
+                    
+                    msg = Message(
+                        subject=f'[RelaticPanama] Nuevo registro: {event.title}',
+                        recipients=[recipient.email],
+                        html=f"""
+                        <h2>Nuevo Registro al Evento</h2>
+                        <p>Hola {recipient.first_name},</p>
+                        <p>Como <strong>{role}</strong> del evento, te informamos que se ha registrado un nuevo participante:</p>
+                        <ul>
+                            <li><strong>Evento:</strong> {event.title}</li>
+                            <li><strong>Participante:</strong> {user.first_name} {user.last_name}</li>
+                            <li><strong>Email:</strong> {user.email}</li>
+                            <li><strong>Estado:</strong> {registration.registration_status}</li>
+                            <li><strong>Fecha de registro:</strong> {registration.registration_date.strftime('%d/%m/%Y %H:%M')}</li>
+                            <li><strong>Precio pagado:</strong> ${registration.final_price:.2f} {event.currency}</li>
+                        </ul>
+                        <p>Puedes gestionar los registros desde el panel de administración.</p>
+                        <p>Saludos,<br>Equipo RelaticPanama</p>
+                        """
+                    )
+                    mail.send(msg)
+                    notification.email_sent = True
+                    notification.email_sent_at = datetime.utcnow()
+                except Exception as e:
+                    print(f"Error enviando email de notificación a {recipient.email}: {e}")
+            
+            db.session.commit()
+            
+        except Exception as e:
+            print(f"Error en notify_event_registration: {e}")
+            db.session.rollback()
+    
+    @staticmethod
+    def notify_event_cancellation(event, user, registration):
+        """Notificar a moderador, administrador y expositor sobre una cancelación"""
+        try:
+            recipients = event.get_notification_recipients()
+            
+            if not recipients:
+                return
+            
+            for recipient in recipients:
+                role = "Responsable"
+                if event.moderator_id == recipient.id:
+                    role = "Moderador"
+                elif event.administrator_id == recipient.id:
+                    role = "Administrador"
+                elif event.speaker_id == recipient.id:
+                    role = "Expositor"
+                elif event.created_by == recipient.id:
+                    role = "Creador"
+                
+                notification = Notification(
+                    user_id=recipient.id,
+                    event_id=event.id,
+                    notification_type='event_cancellation',
+                    title=f'Cancelación de registro: {event.title}',
+                    message=f'El usuario {user.first_name} {user.last_name} ({user.email}) ha cancelado su registro al evento "{event.title}".'
+                )
+                db.session.add(notification)
+                
+                try:
+                    msg = Message(
+                        subject=f'[RelaticPanama] Cancelación de registro: {event.title}',
+                        recipients=[recipient.email],
+                        html=f"""
+                        <h2>Cancelación de Registro</h2>
+                        <p>Hola {recipient.first_name},</p>
+                        <p>Como <strong>{role}</strong> del evento, te informamos que un participante ha cancelado su registro:</p>
+                        <ul>
+                            <li><strong>Evento:</strong> {event.title}</li>
+                            <li><strong>Participante:</strong> {user.first_name} {user.last_name}</li>
+                            <li><strong>Email:</strong> {user.email}</li>
+                            <li><strong>Fecha de cancelación:</strong> {datetime.utcnow().strftime('%d/%m/%Y %H:%M')}</li>
+                        </ul>
+                        <p>Saludos,<br>Equipo RelaticPanama</p>
+                        """
+                    )
+                    mail.send(msg)
+                    notification.email_sent = True
+                    notification.email_sent_at = datetime.utcnow()
+                except Exception as e:
+                    print(f"Error enviando email de cancelación a {recipient.email}: {e}")
+            
+            db.session.commit()
+            
+        except Exception as e:
+            print(f"Error en notify_event_cancellation: {e}")
+            db.session.rollback()
+    
+    @staticmethod
+    def notify_event_confirmation(event, user, registration):
+        """Notificar a moderador, administrador y expositor cuando se confirma un registro"""
+        try:
+            recipients = event.get_notification_recipients()
+            
+            if not recipients:
+                return
+            
+            for recipient in recipients:
+                role = "Responsable"
+                if event.moderator_id == recipient.id:
+                    role = "Moderador"
+                elif event.administrator_id == recipient.id:
+                    role = "Administrador"
+                elif event.speaker_id == recipient.id:
+                    role = "Expositor"
+                elif event.created_by == recipient.id:
+                    role = "Creador"
+                
+                notification = Notification(
+                    user_id=recipient.id,
+                    event_id=event.id,
+                    notification_type='event_confirmation',
+                    title=f'Registro confirmado: {event.title}',
+                    message=f'El registro de {user.first_name} {user.last_name} al evento "{event.title}" ha sido confirmado.'
+                )
+                db.session.add(notification)
+                
+                try:
+                    msg = Message(
+                        subject=f'[RelaticPanama] Registro confirmado: {event.title}',
+                        recipients=[recipient.email],
+                        html=f"""
+                        <h2>Registro Confirmado</h2>
+                        <p>Hola {recipient.first_name},</p>
+                        <p>Como <strong>{role}</strong> del evento, te informamos que un registro ha sido confirmado:</p>
+                        <ul>
+                            <li><strong>Evento:</strong> {event.title}</li>
+                            <li><strong>Participante:</strong> {user.first_name} {user.last_name}</li>
+                            <li><strong>Email:</strong> {user.email}</li>
+                            <li><strong>Estado:</strong> Confirmado</li>
+                        </ul>
+                        <p>Saludos,<br>Equipo RelaticPanama</p>
+                        """
+                    )
+                    mail.send(msg)
+                    notification.email_sent = True
+                    notification.email_sent_at = datetime.utcnow()
+                except Exception as e:
+                    print(f"Error enviando email de confirmación a {recipient.email}: {e}")
+            
+            db.session.commit()
+            
+        except Exception as e:
+            print(f"Error en notify_event_confirmation: {e}")
+            db.session.rollback()
+    
+    @staticmethod
+    def notify_event_update(event, changes=None):
+        """Notificar cambios en un evento a todos los registrados"""
+        try:
+            event_creator = User.query.get(event.created_by) if event.created_by else None
+            
+            if not event_creator:
+                return
+            
+            # Notificar al creador
+            notification = Notification(
+                user_id=event_creator.id,
+                event_id=event.id,
+                notification_type='event_update',
+                title=f'Evento actualizado: {event.title}',
+                message=f'Se han realizado cambios en el evento "{event.title}".'
+            )
+            db.session.add(notification)
+            
+            # Notificar a todos los registrados
+            registrations = EventRegistration.query.filter_by(
+                event_id=event.id,
+                registration_status='confirmed'
+            ).all()
+            
+            for reg in registrations:
+                user = User.query.get(reg.user_id)
+                if user:
+                    user_notification = Notification(
+                        user_id=user.id,
+                        event_id=event.id,
+                        notification_type='event_update',
+                        title=f'Actualización del evento: {event.title}',
+                        message=f'El evento "{event.title}" al que estás registrado ha sido actualizado. Revisa los detalles en la plataforma.'
+                    )
+                    db.session.add(user_notification)
+                    
+                    try:
+                        msg = Message(
+                            subject=f'[RelaticPanama] Actualización: {event.title}',
+                            recipients=[user.email],
+                            html=f"""
+                            <h2>Evento Actualizado</h2>
+                            <p>Hola {user.first_name},</p>
+                            <p>El evento "{event.title}" al que estás registrado ha sido actualizado.</p>
+                            <p>Te recomendamos revisar los detalles del evento en la plataforma.</p>
+                            <p>Saludos,<br>Equipo RelaticPanama</p>
+                            """
+                        )
+                        mail.send(msg)
+                        user_notification.email_sent = True
+                        user_notification.email_sent_at = datetime.utcnow()
+                    except Exception as e:
+                        print(f"Error enviando email de actualización a {user.email}: {e}")
+            
+            db.session.commit()
+            
+        except Exception as e:
+            print(f"Error en notify_event_update: {e}")
+            db.session.rollback()
+
+
 def send_payment_confirmation_email(user, payment, subscription):
     """Enviar email de confirmación de pago"""
     try:
@@ -1280,6 +1603,45 @@ def create_sample_data():
             db.session.add(benefit)
     
     db.session.commit()
+
+# Ruta para obtener notificaciones del usuario
+@app.route('/api/notifications')
+@login_required
+def api_notifications():
+    """API para obtener notificaciones del usuario actual"""
+    unread_count = Notification.query.filter_by(
+        user_id=current_user.id,
+        is_read=False
+    ).count()
+    
+    notifications = Notification.query.filter_by(
+        user_id=current_user.id
+    ).order_by(Notification.created_at.desc()).limit(20).all()
+    
+    return jsonify({
+        'unread_count': unread_count,
+        'notifications': [{
+            'id': n.id,
+            'title': n.title,
+            'message': n.message,
+            'type': n.notification_type,
+            'is_read': n.is_read,
+            'created_at': n.created_at.isoformat(),
+            'event_id': n.event_id
+        } for n in notifications]
+    })
+
+@app.route('/api/notifications/<int:notification_id>/read', methods=['POST'])
+@login_required
+def mark_notification_read(notification_id):
+    """Marcar una notificación como leída"""
+    notification = Notification.query.filter_by(
+        id=notification_id,
+        user_id=current_user.id
+    ).first_or_404()
+    
+    notification.mark_as_read()
+    return jsonify({'success': True})
 
 if __name__ == '__main__':
     with app.app_context():
