@@ -59,94 +59,76 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body p-0">
                     <div id="notificationsList">
-                        <!-- Notificación de ejemplo -->
-                        <div class="notification-item border-bottom p-3" data-type="event" data-status="unread">
-                            <div class="d-flex align-items-start">
-                                <div class="me-3">
-                                    <div class="bg-primary rounded-circle p-2">
-                                        <i class="fas fa-calendar text-white"></i>
-                                    </div>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <h6 class="mb-1">Nuevo evento disponible</h6>
-                                            <p class="text-muted mb-1 small">
-                                                Se ha publicado un nuevo curso sobre metodología cualitativa. 
-                                                Inscríbete antes del 15 de diciembre.
-                                            </p>
-                                            <small class="text-muted">
-                                                <i class="fas fa-clock"></i> Hace 2 horas
-                                            </small>
-                                        </div>
-                                        <div>
-                                            <span class="badge bg-primary">No leída</span>
-                                            <button class="btn btn-sm btn-link text-danger" onclick="deleteNotification(this)">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="notification-item border-bottom p-3" data-type="publication" data-status="read">
-                            <div class="d-flex align-items-start">
-                                <div class="me-3">
-                                    <div class="bg-success rounded-circle p-2">
-                                        <i class="fas fa-file-alt text-white"></i>
-                                    </div>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <h6 class="mb-1">Nueva publicación disponible</h6>
-                                            <p class="text-muted mb-1 small">
-                                                Tu artículo ha sido publicado en la revista indexada.
-                                            </p>
-                                            <small class="text-muted">
-                                                <i class="fas fa-clock"></i> Hace 1 día
-                                            </small>
-                                        </div>
-                                        <div>
-                                            <span class="badge bg-secondary">Leída</span>
-                                            <button class="btn btn-sm btn-link text-danger" onclick="deleteNotification(this)">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                        {% if notifications %}
+                            {% for notification in notifications %}
+                            <div class="notification-item border-bottom p-3" 
+                                 data-type="{{ notification.notification_type }}" 
+                                 data-status="{{ 'unread' if not notification.is_read else 'read' }}"
+                                 data-id="{{ notification.id }}">
+                                <div class="d-flex align-items-start">
+                                    <div class="me-3">
+                                        {% set icon_map = {
+                                            'event': 'fa-calendar',
+                                            'event_registration': 'fa-calendar-check',
+                                            'event_cancellation': 'fa-calendar-times',
+                                            'event_update': 'fa-calendar-alt',
+                                            'membership_payment': 'fa-credit-card',
+                                            'membership_expiring': 'fa-exclamation-triangle',
+                                            'membership_expired': 'fa-times-circle',
+                                            'membership_renewed': 'fa-check-circle',
+                                            'appointment_confirmation': 'fa-clock',
+                                            'appointment_reminder': 'fa-bell',
+                                            'welcome': 'fa-hand-sparkles',
+                                            'system': 'fa-info-circle'
+                                        } %}
+                                        {% set color_map = {
+                                            'event': 'primary',
+                                            'event_registration': 'success',
+                                            'event_cancellation': 'danger',
+                                            'event_update': 'info',
+                                            'membership_payment': 'success',
+                                            'membership_expiring': 'warning',
+                                            'membership_expired': 'danger',
+                                            'membership_renewed': 'success',
+                                            'appointment_confirmation': 'info',
+                                            'appointment_reminder': 'warning',
+                                            'welcome': 'primary',
+                                            'system': 'info'
+                                        } %}
+                                        <div class="bg-{{ color_map.get(notification.notification_type, 'primary') }} rounded-circle p-2">
+                                            <i class="fas {{ icon_map.get(notification.notification_type, 'fa-bell') }} text-white"></i>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="notification-item p-3" data-type="system" data-status="unread">
-                            <div class="d-flex align-items-start">
-                                <div class="me-3">
-                                    <div class="bg-info rounded-circle p-2">
-                                        <i class="fas fa-info-circle text-white"></i>
-                                    </div>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <h6 class="mb-1">Actualización del sistema</h6>
-                                            <p class="text-muted mb-1 small">
-                                                Se han implementado nuevas funcionalidades en la plataforma.
-                                            </p>
-                                            <small class="text-muted">
-                                                <i class="fas fa-clock"></i> Hace 3 días
-                                            </small>
-                                        </div>
-                                        <div>
-                                            <span class="badge bg-primary">No leída</span>
-                                            <button class="btn btn-sm btn-link text-danger" onclick="deleteNotification(this)">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="mb-1">{{ notification.title }}</h6>
+                                                <p class="text-muted mb-1 small">{{ notification.message }}</p>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-clock"></i> {{ notification.created_at.strftime('%d/%m/%Y %H:%M') if notification.created_at else 'Fecha no disponible' }}
+                                                </small>
+                                            </div>
+                                            <div>
+                                                {% if notification.is_read %}
+                                                    <span class="badge bg-secondary">Leída</span>
+                                                {% else %}
+                                                    <span class="badge bg-primary">No leída</span>
+                                                {% endif %}
+                                                <button class="btn btn-sm btn-link text-danger" onclick="deleteNotification({{ notification.id }})">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                            {% endfor %}
+                        {% else %}
+                            <div id="noNotifications" class="text-center p-5">
+                                <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No hay notificaciones disponibles</p>
+                            </div>
+                        {% endif %}
                     </div>
 
                     <!-- Mensaje cuando no hay notificaciones -->
@@ -188,25 +170,67 @@ function filterNotifications() {
 }
 
 function markAllAsRead() {
-    const items = document.querySelectorAll('.notification-item[data-status="unread"]');
-    items.forEach(item => {
-        item.dataset.status = 'read';
-        const badge = item.querySelector('.badge');
-        if (badge) {
-            badge.className = 'badge bg-secondary';
-            badge.textContent = 'Leída';
+    fetch('/api/notifications/read-all', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
         }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const items = document.querySelectorAll('.notification-item[data-status="unread"]');
+            items.forEach(item => {
+                item.dataset.status = 'read';
+                const badge = item.querySelector('.badge');
+                if (badge) {
+                    badge.className = 'badge bg-secondary';
+                    badge.textContent = 'Leída';
+                }
+            });
+            alert('Todas las notificaciones han sido marcadas como leídas');
+            // Actualizar contador en el navbar si existe
+            const badge = document.querySelector('.notification-badge');
+            if (badge) {
+                badge.style.display = 'none';
+            }
+        } else {
+            alert('Error al marcar las notificaciones como leídas');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al marcar las notificaciones como leídas');
     });
-    alert('Todas las notificaciones han sido marcadas como leídas');
 }
 
-function deleteNotification(button) {
+function deleteNotification(notificationId) {
     if (confirm('¿Estás seguro de que deseas eliminar esta notificación?')) {
-        button.closest('.notification-item').remove();
-        const items = document.querySelectorAll('.notification-item');
-        if (items.length === 0) {
-            document.getElementById('noNotifications').style.display = 'block';
-        }
+        fetch(`/api/notifications/${notificationId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+                if (item) {
+                    item.remove();
+                }
+                const items = document.querySelectorAll('.notification-item');
+                if (items.length === 0) {
+                    document.getElementById('noNotifications').style.display = 'block';
+                }
+            } else {
+                alert('Error al eliminar la notificación');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al eliminar la notificación');
+        });
     }
 }
 
@@ -215,12 +239,39 @@ document.querySelectorAll('.notification-item').forEach(item => {
     item.addEventListener('click', function(e) {
         if (e.target.closest('button')) return;
         if (this.dataset.status === 'unread') {
-            this.dataset.status = 'read';
-            const badge = this.querySelector('.badge');
-            if (badge) {
-                badge.className = 'badge bg-secondary';
-                badge.textContent = 'Leída';
-            }
+            const notificationId = this.dataset.id;
+            fetch(`/api/notifications/${notificationId}/read`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    this.dataset.status = 'read';
+                    const badge = this.querySelector('.badge');
+                    if (badge) {
+                        badge.className = 'badge bg-secondary';
+                        badge.textContent = 'Leída';
+                    }
+                    // Actualizar contador en el navbar si existe
+                    const notificationBadge = document.querySelector('.notification-badge');
+                    if (notificationBadge) {
+                        const currentCount = parseInt(notificationBadge.textContent) || 0;
+                        const newCount = Math.max(0, currentCount - 1);
+                        if (newCount > 0) {
+                            notificationBadge.textContent = newCount;
+                            notificationBadge.style.display = 'block';
+                        } else {
+                            notificationBadge.style.display = 'none';
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
         }
     });
 });

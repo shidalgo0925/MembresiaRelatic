@@ -231,7 +231,7 @@
                         
                         {% if current_user.is_admin %}
                         <!-- Administración - Sección Expandible -->
-                        <li class="nav-item nav-group {% if request.endpoint in ['admin_dashboard', 'admin_users', 'admin_memberships'] or request.blueprint == 'admin_events' or request.endpoint == 'admin_events.discounts_index' or request.blueprint == 'admin_appointments' %}show{% endif %}">
+                        <li class="nav-item nav-group {% if request.endpoint in ['admin_dashboard', 'admin_users', 'admin_memberships', 'admin_messaging', 'admin_messaging_detail'] or request.blueprint == 'admin_events' or request.endpoint == 'admin_events.discounts_index' or request.blueprint == 'admin_appointments' %}show{% endif %}">
                             <a class="nav-link nav-group-toggle" href="#" onclick="return false;">
                                 <i class="menu-icon fa fa-cog"></i>
                                 <span class="menu-title-text">Administración</span>
@@ -266,6 +266,11 @@
                                 <li class="nav-item">
                                     <a class="nav-link {% if request.blueprint == 'admin_appointments' %}active{% endif %}" href="{{ url_for('admin_appointments.admin_appointments_dashboard') }}">
                                         <span class="menu-title-text">Gestión de Citas</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.endpoint == 'admin_messaging' or request.endpoint == 'admin_messaging_detail' %}active{% endif %}" href="{{ url_for('admin_messaging') }}">
+                                        <span class="menu-title-text">Mensajería</span>
                                     </a>
                                 </li>
                             </ul>

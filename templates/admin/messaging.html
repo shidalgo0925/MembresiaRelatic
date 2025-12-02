@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Mensajería - RelaticPanama{% endblock %}
+
+{% block page_content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-6 mb-3">
+                <i class="fas fa-envelope"></i> Gestión de Mensajería
+            </h1>
+            <p class="text-muted">Visualiza y gestiona todos los emails enviados por el sistema</p>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">Total Emails</h5>
+                    <h2 class="text-primary">{{ total_emails }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">Enviados</h5>
+                    <h2 class="text-success">{{ sent_emails }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">Fallidos</h5>
+                    <h2 class="text-danger">{{ failed_emails }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">Tasa de Éxito</h5>
+                    <h2 class="text-info">
+                        {% if total_emails > 0 %}
+                            {{ "%.1f"|format((sent_emails / total_emails * 100)) }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('admin_messaging') }}" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="type" class="form-label">Tipo de Email</label>
+                            <select name="type" id="type" class="form-select">
+                                <option value="all" {% if current_type == 'all' %}selected{% endif %}>Todos</option>
+                                {% for email_type in email_types %}
+                                <option value="{{ email_type }}" {% if current_type == email_type %}selected{% endif %}>
+                                    {{ email_type.replace('_', ' ').title() }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">Estado</label>
+                            <select name="status" id="status" class="form-select">
+                                <option value="all" {% if current_status == 'all' %}selected{% endif %}>Todos</option>
+                                <option value="sent" {% if current_status == 'sent' %}selected{% endif %}>Enviados</option>
+                                <option value="failed" {% if current_status == 'failed' %}selected{% endif %}>Fallidos</option>
+                                <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pendientes</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="search" class="form-label">Buscar</label>
+                            <input type="text" name="search" id="search" class="form-control" 
+                                   placeholder="Email, asunto, nombre..." value="{{ search }}">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-search"></i> Filtrar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de emails -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Lista de Emails</h5>
+                    <span class="badge bg-primary">{{ pagination.total }} emails</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Destinatario</th>
+                                    <th>Asunto</th>
+                                    <th>Tipo</th>
+                                    <th>Entidad</th>
+                                    <th>Estado</th>
+                                    <th>Fecha</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for email in emails %}
+                                <tr>
+                                    <td>{{ email.id }}</td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ email.recipient_name or email.recipient_email }}</strong><br>
+                                            <small class="text-muted">{{ email.recipient_email }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 300px;" title="{{ email.subject }}">
+                                            {{ email.subject }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            {{ email.email_type.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if email.related_entity_type %}
+                                        <span class="badge bg-info">
+                                            {{ email.related_entity_type.title() }}
+                                            {% if email.related_entity_id %}
+                                                #{{ email.related_entity_id }}
+                                            {% endif %}
+                                        </span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if email.status == 'sent' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check"></i> Enviado
+                                        </span>
+                                        {% elif email.status == 'failed' %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times"></i> Fallido
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-clock"></i> Pendiente
+                                        </span>
+                                        {% endif %}
+                                        {% if email.retry_count > 0 %}
+                                        <br><small class="text-muted">Reintentos: {{ email.retry_count }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if email.sent_at %}
+                                        {{ email.sent_at.strftime('%d/%m/%Y %H:%M') }}
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                        <br>
+                                        <small class="text-muted">{{ email.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('admin_messaging_detail', email_id=email.id) }}" 
+                                               class="btn btn-sm btn-outline-primary" title="Ver detalle">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if email.status == 'failed' %}
+                                            <form method="POST" action="{{ url_for('admin_messaging_resend', email_id=email.id) }}" 
+                                                  class="d-inline" onsubmit="return confirm('¿Reenviar este email?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Reenviar">
+                                                    <i class="fas fa-redo"></i>
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                            <form method="POST" action="{{ url_for('admin_messaging_delete', email_id=email.id) }}" 
+                                                  class="d-inline" onsubmit="return confirm('¿Eliminar este registro?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">
+                                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                                        <p>No se encontraron emails con los filtros seleccionados.</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    {% if pagination.pages > 1 %}
+                    <nav aria-label="Paginación">
+                        <ul class="pagination justify-content-center">
+                            {% if pagination.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin_messaging', page=pagination.prev_num, type=current_type, status=current_status, search=search) }}">
+                                    <i class="fas fa-chevron-left"></i> Anterior
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                                {% if page_num %}
+                                    {% if page_num == pagination.page %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin_messaging', page=page_num, type=current_type, status=current_status, search=search) }}">
+                                            {{ page_num }}
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if pagination.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin_messaging', page=pagination.next_num, type=current_type, status=current_status, search=search) }}">
+                                    Siguiente <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

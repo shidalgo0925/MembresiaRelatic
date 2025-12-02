@@ -1,0 +1,440 @@
+#!/usr/bin/env python3
+"""
+Plantillas de correo electrónico para RelaticPanama
+Sistema de templates HTML para diferentes tipos de notificaciones
+"""
+
+from datetime import datetime
+
+def get_email_template_base():
+    """Template base HTML para todos los correos"""
+    return """
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{subject}</title>
+        <style>
+            body {{
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: #f4f4f4;
+            }}
+            .email-container {{
+                background-color: #ffffff;
+                border-radius: 8px;
+                padding: 30px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }}
+            .header {{
+                text-align: center;
+                border-bottom: 3px solid #0066cc;
+                padding-bottom: 20px;
+                margin-bottom: 30px;
+            }}
+            .header h1 {{
+                color: #0066cc;
+                margin: 0;
+                font-size: 24px;
+            }}
+            .content {{
+                margin-bottom: 30px;
+            }}
+            .content h2 {{
+                color: #0066cc;
+                font-size: 20px;
+                margin-top: 0;
+            }}
+            .content p {{
+                margin-bottom: 15px;
+            }}
+            .info-box {{
+                background-color: #f8f9fa;
+                border-left: 4px solid #0066cc;
+                padding: 15px;
+                margin: 20px 0;
+            }}
+            .info-box ul {{
+                margin: 10px 0;
+                padding-left: 20px;
+            }}
+            .info-box li {{
+                margin-bottom: 8px;
+            }}
+            .button {{
+                display: inline-block;
+                padding: 12px 30px;
+                background-color: #0066cc;
+                color: #ffffff !important;
+                text-decoration: none;
+                border-radius: 5px;
+                margin: 20px 0;
+                font-weight: bold;
+            }}
+            .button:hover {{
+                background-color: #0052a3;
+            }}
+            .footer {{
+                margin-top: 30px;
+                padding-top: 20px;
+                border-top: 1px solid #e0e0e0;
+                text-align: center;
+                color: #666;
+                font-size: 12px;
+            }}
+            .badge {{
+                display: inline-block;
+                padding: 5px 10px;
+                background-color: #28a745;
+                color: white;
+                border-radius: 3px;
+                font-size: 12px;
+                font-weight: bold;
+            }}
+            .warning-badge {{
+                background-color: #ffc107;
+                color: #333;
+            }}
+            .danger-badge {{
+                background-color: #dc3545;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="email-container">
+            <div class="header">
+                <h1>RelaticPanama</h1>
+                <p style="color: #666; margin: 5px 0;">Red Latinoamericana de Investigaciones Cualitativas</p>
+            </div>
+            <div class="content">
+                {content}
+            </div>
+            <div class="footer">
+                <p>Este es un correo automático de RelaticPanama. Por favor, no responda a este mensaje.</p>
+                <p>Si tiene alguna consulta, contacte a: <a href="mailto:administracion@relaticpanama.org">administracion@relaticpanama.org</a></p>
+                <p>&copy; {year} RelaticPanama. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+
+def get_membership_payment_confirmation_email(user, payment, subscription):
+    """Template para confirmación de pago de membresía"""
+    content = f"""
+        <h2>¡Pago Confirmado!</h2>
+        <p>Hola <strong>{user.first_name} {user.last_name}</strong>,</p>
+        <p>Tu pago por la membresía <strong>{payment.membership_type.title()}</strong> ha sido procesado exitosamente.</p>
+        
+        <div class="info-box">
+            <h3 style="margin-top: 0;">Detalles del Pago:</h3>
+            <ul>
+                <li><strong>Membresía:</strong> {payment.membership_type.title()}</li>
+                <li><strong>Monto:</strong> ${payment.amount / 100:.2f}</li>
+                <li><strong>Fecha de pago:</strong> {payment.created_at.strftime('%d/%m/%Y %H:%M')}</li>
+                <li><strong>Válida hasta:</strong> {subscription.end_date.strftime('%d/%m/%Y')}</li>
+                <li><strong>Estado:</strong> <span class="badge">Activa</span></li>
+            </ul>
+        </div>
+        
+        <p>Ya puedes acceder a todos los beneficios de tu membresía desde tu dashboard.</p>
+        <p style="text-align: center;">
+            <a href="https://relaticpanama.org/dashboard" class="button">Ir a mi Dashboard</a>
+        </p>
+        
+        <p>¡Gracias por ser parte de RelaticPanama!</p>
+    """
+    return get_email_template_base().format(
+        subject="Confirmación de Pago - RelaticPanama",
+        content=content,
+        year=datetime.now().year
+    )
+
+
+def get_membership_expiring_email(user, subscription, days_left):
+    """Template para notificación de membresía por expirar"""
+    content = f"""
+        <h2>Tu Membresía Expirará Pronto</h2>
+        <p>Hola <strong>{user.first_name} {user.last_name}</strong>,</p>
+        <p>Te informamos que tu membresía <strong>{subscription.membership_type.title()}</strong> expirará en <strong>{days_left} días</strong>.</p>
+        
+        <div class="info-box">
+            <h3 style="margin-top: 0;">Detalles:</h3>
+            <ul>
+                <li><strong>Membresía:</strong> {subscription.membership_type.title()}</li>
+                <li><strong>Fecha de expiración:</strong> {subscription.end_date.strftime('%d/%m/%Y')}</li>
+                <li><strong>Días restantes:</strong> <span class="badge warning-badge">{days_left} días</span></li>
+            </ul>
+        </div>
+        
+        <p>Para continuar disfrutando de todos los beneficios, te recomendamos renovar tu membresía antes de la fecha de expiración.</p>
+        <p style="text-align: center;">
+            <a href="https://relaticpanama.org/membership" class="button">Renovar Membresía</a>
+        </p>
+    """
+    return get_email_template_base().format(
+        subject=f"Tu Membresía Expirará en {days_left} Días - RelaticPanama",
+        content=content,
+        year=datetime.now().year
+    )
+
+
+def get_membership_expired_email(user, subscription):
+    """Template para notificación de membresía expirada"""
+    content = f"""
+        <h2>Tu Membresía Ha Expirado</h2>
+        <p>Hola <strong>{user.first_name} {user.last_name}</strong>,</p>
+        <p>Te informamos que tu membresía <strong>{subscription.membership_type.title()}</strong> ha expirado.</p>
+        
+        <div class="info-box">
+            <h3 style="margin-top: 0;">Detalles:</h3>
+            <ul>
+                <li><strong>Membresía:</strong> {subscription.membership_type.title()}</li>
+                <li><strong>Fecha de expiración:</strong> {subscription.end_date.strftime('%d/%m/%Y')}</li>
+                <li><strong>Estado:</strong> <span class="badge danger-badge">Expirada</span></li>
+            </ul>
+        </div>
+        
+        <p>Para reactivar tu membresía y continuar disfrutando de todos los beneficios, puedes renovarla ahora.</p>
+        <p style="text-align: center;">
+            <a href="https://relaticpanama.org/membership" class="button">Renovar Membresía</a>
+        </p>
+    """
+    return get_email_template_base().format(
+        subject="Tu Membresía Ha Expirado - RelaticPanama",
+        content=content,
+        year=datetime.now().year
+    )
+
+
+def get_membership_renewed_email(user, subscription):
+    """Template para confirmación de renovación de membresía"""
+    content = f"""
+        <h2>¡Membresía Renovada Exitosamente!</h2>
+        <p>Hola <strong>{user.first_name} {user.last_name}</strong>,</p>
+        <p>Tu membresía <strong>{subscription.membership_type.title()}</strong> ha sido renovada exitosamente.</p>
+        
+        <div class="info-box">
+            <h3 style="margin-top: 0;">Detalles:</h3>
+            <ul>
+                <li><strong>Membresía:</strong> {subscription.membership_type.title()}</li>
+                <li><strong>Fecha de inicio:</strong> {subscription.start_date.strftime('%d/%m/%Y')}</li>
+                <li><strong>Válida hasta:</strong> {subscription.end_date.strftime('%d/%m/%Y')}</li>
+                <li><strong>Estado:</strong> <span class="badge">Activa</span></li>
+            </ul>
+        </div>
+        
+        <p>Gracias por continuar siendo parte de RelaticPanama.</p>
+        <p style="text-align: center;">
+            <a href="https://relaticpanama.org/dashboard" class="button">Ir a mi Dashboard</a>
+        </p>
+    """
+    return get_email_template_base().format(
+        subject="Membresía Renovada - RelaticPanama",
+        content=content,
+        year=datetime.now().year
+    )
+
+
+def get_event_registration_email(event, user, registration):
+    """Template para confirmación de registro a evento"""
+    content = f"""
+        <h2>Registro Confirmado</h2>
+        <p>Hola <strong>{user.first_name} {user.last_name}</strong>,</p>
+        <p>Tu registro al evento <strong>"{event.title}"</strong> ha sido confirmado.</p>
+        
+        <div class="info-box">
+            <h3 style="margin-top: 0;">Detalles del Evento:</h3>
+            <ul>
+                <li><strong>Evento:</strong> {event.title}</li>
+                <li><strong>Fecha:</strong> {event.start_date.strftime('%d/%m/%Y') if event.start_date else 'Por definir'}</li>
+                <li><strong>Hora:</strong> {event.start_time if event.start_time else 'Por definir'}</li>
+                <li><strong>Estado:</strong> <span class="badge">{registration.registration_status.title()}</span></li>
+                <li><strong>Precio pagado:</strong> ${registration.final_price:.2f} {event.currency if event.currency else 'USD'}</li>
+            </ul>
+        </div>
+        
+        <p>Te enviaremos más información sobre el evento próximamente.</p>
+        <p style="text-align: center;">
+            <a href="https://relaticpanama.org/events/{event.id}" class="button">Ver Detalles del Evento</a>
+        </p>
+    """
+    return get_email_template_base().format(
+        subject=f"Registro Confirmado: {event.title}",
+        content=content,
+        year=datetime.now().year
+    )
+
+
+def get_event_cancellation_email(event, user):
+    """Template para cancelación de registro a evento"""
+    content = f"""
+        <h2>Registro Cancelado</h2>
+        <p>Hola <strong>{user.first_name} {user.last_name}</strong>,</p>
+        <p>Tu registro al evento <strong>"{event.title}"</strong> ha sido cancelado.</p>
+        
+        <div class="info-box">
+            <h3 style="margin-top: 0;">Detalles:</h3>
+            <ul>
+                <li><strong>Evento:</strong> {event.title}</li>
+                <li><strong>Fecha de cancelación:</strong> {datetime.now().strftime('%d/%m/%Y %H:%M')}</li>
+            </ul>
+        </div>
+        
+        <p>Si tienes alguna pregunta o necesitas asistencia, no dudes en contactarnos.</p>
+    """
+    return get_email_template_base().format(
+        subject=f"Cancelación de Registro: {event.title}",
+        content=content,
+        year=datetime.now().year
+    )
+
+
+def get_event_update_email(event, user, changes=None):
+    """Template para actualización de evento"""
+    changes_text = ""
+    if changes:
+        changes_text = "<ul>"
+        for change in changes:
+            changes_text += f"<li>{change}</li>"
+        changes_text += "</ul>"
+    
+    content = f"""
+        <h2>Evento Actualizado</h2>
+        <p>Hola <strong>{user.first_name} {user.last_name}</strong>,</p>
+        <p>El evento <strong>"{event.title}"</strong> al que estás registrado ha sido actualizado.</p>
+        
+        <div class="info-box">
+            <h3 style="margin-top: 0;">Cambios Realizados:</h3>
+            {changes_text if changes_text else '<p>Se han realizado cambios en los detalles del evento.</p>'}
+        </div>
+        
+        <p>Te recomendamos revisar los detalles actualizados del evento.</p>
+        <p style="text-align: center;">
+            <a href="https://relaticpanama.org/events/{event.id}" class="button">Ver Detalles Actualizados</a>
+        </p>
+    """
+    return get_email_template_base().format(
+        subject=f"Actualización: {event.title}",
+        content=content,
+        year=datetime.now().year
+    )
+
+
+def get_appointment_confirmation_email(appointment, user, advisor):
+    """Template para confirmación de cita"""
+    content = f"""
+        <h2>Cita Confirmada</h2>
+        <p>Hola <strong>{user.first_name} {user.last_name}</strong>,</p>
+        <p>Tu cita con <strong>{advisor.first_name} {advisor.last_name}</strong> ha sido confirmada.</p>
+        
+        <div class="info-box">
+            <h3 style="margin-top: 0;">Detalles de la Cita:</h3>
+            <ul>
+                <li><strong>Asesor:</strong> {advisor.first_name} {advisor.last_name}</li>
+                <li><strong>Fecha:</strong> {appointment.appointment_date.strftime('%d/%m/%Y')}</li>
+                <li><strong>Hora:</strong> {appointment.appointment_time}</li>
+                <li><strong>Duración:</strong> {appointment.duration} minutos</li>
+                <li><strong>Tipo:</strong> {appointment.appointment_type}</li>
+                <li><strong>Estado:</strong> <span class="badge">{appointment.status.title()}</span></li>
+            </ul>
+        </div>
+        
+        <p>Te recordaremos la cita con anticipación.</p>
+        <p style="text-align: center;">
+            <a href="https://relaticpanama.org/appointments" class="button">Ver Mis Citas</a>
+        </p>
+    """
+    return get_email_template_base().format(
+        subject="Cita Confirmada - RelaticPanama",
+        content=content,
+        year=datetime.now().year
+    )
+
+
+def get_appointment_reminder_email(appointment, user, advisor, hours_before=24):
+    """Template para recordatorio de cita"""
+    content = f"""
+        <h2>Recordatorio de Cita</h2>
+        <p>Hola <strong>{user.first_name} {user.last_name}</strong>,</p>
+        <p>Te recordamos que tienes una cita programada en <strong>{hours_before} horas</strong>.</p>
+        
+        <div class="info-box">
+            <h3 style="margin-top: 0;">Detalles de la Cita:</h3>
+            <ul>
+                <li><strong>Asesor:</strong> {advisor.first_name} {advisor.last_name}</li>
+                <li><strong>Fecha:</strong> {appointment.appointment_date.strftime('%d/%m/%Y')}</li>
+                <li><strong>Hora:</strong> {appointment.appointment_time}</li>
+                <li><strong>Duración:</strong> {appointment.duration} minutos</li>
+            </ul>
+        </div>
+        
+        <p>Por favor, asegúrate de estar disponible a la hora programada.</p>
+        <p style="text-align: center;">
+            <a href="https://relaticpanama.org/appointments" class="button">Ver Mis Citas</a>
+        </p>
+    """
+    return get_email_template_base().format(
+        subject=f"Recordatorio: Cita en {hours_before} horas - RelaticPanama",
+        content=content,
+        year=datetime.now().year
+    )
+
+
+def get_welcome_email(user):
+    """Template para email de bienvenida"""
+    content = f"""
+        <h2>¡Bienvenido a RelaticPanama!</h2>
+        <p>Hola <strong>{user.first_name} {user.last_name}</strong>,</p>
+        <p>Te damos la bienvenida a RelaticPanama, la Red Latinoamericana de Investigaciones Cualitativas.</p>
+        
+        <div class="info-box">
+            <h3 style="margin-top: 0;">¿Qué puedes hacer ahora?</h3>
+            <ul>
+                <li>Explorar nuestros eventos y cursos</li>
+                <li>Acceder a recursos exclusivos</li>
+                <li>Conectar con otros investigadores</li>
+                <li>Gestionar tu membresía</li>
+            </ul>
+        </div>
+        
+        <p>Estamos aquí para apoyarte en tu investigación cualitativa.</p>
+        <p style="text-align: center;">
+            <a href="https://relaticpanama.org/dashboard" class="button">Ir a mi Dashboard</a>
+        </p>
+    """
+    return get_email_template_base().format(
+        subject="Bienvenido a RelaticPanama",
+        content=content,
+        year=datetime.now().year
+    )
+
+
+def get_password_reset_email(user, reset_token, reset_url):
+    """Template para restablecimiento de contraseña"""
+    content = f"""
+        <h2>Restablecer Contraseña</h2>
+        <p>Hola <strong>{user.first_name} {user.last_name}</strong>,</p>
+        <p>Has solicitado restablecer tu contraseña. Haz clic en el botón siguiente para continuar:</p>
+        
+        <p style="text-align: center;">
+            <a href="{reset_url}" class="button">Restablecer Contraseña</a>
+        </p>
+        
+        <p>Si no solicitaste este cambio, puedes ignorar este correo. El enlace expirará en 1 hora.</p>
+        
+        <p><small>O copia y pega este enlace en tu navegador:</small><br>
+        <small style="color: #666; word-break: break-all;">{reset_url}</small></p>
+    """
+    return get_email_template_base().format(
+        subject="Restablecer Contraseña - RelaticPanama",
+        content=content,
+        year=datetime.now().year
+    )
+

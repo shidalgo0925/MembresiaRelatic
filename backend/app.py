@@ -14,6 +14,25 @@ import os
 import secrets
 import stripe
 from flask_mail import Mail, Message
+try:
+    from email_service import EmailService
+    from email_templates import (
+        get_membership_payment_confirmation_email,
+        get_membership_expiring_email,
+        get_membership_expired_email,
+        get_membership_renewed_email,
+        get_event_registration_email,
+        get_event_cancellation_email,
+        get_event_update_email,
+        get_appointment_confirmation_email,
+        get_appointment_reminder_email,
+        get_welcome_email,
+        get_password_reset_email
+    )
+    EMAIL_TEMPLATES_AVAILABLE = True
+except ImportError:
+    EMAIL_TEMPLATES_AVAILABLE = False
+    print("⚠️ Email templates no disponibles. Usando templates básicos.")
 
 # Configuración de la aplicación
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
@@ -43,6 +62,12 @@ login_manager.init_app(app)
 mail = Mail(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Por favor, inicia sesión para acceder a esta página.'
+
+# Inicializar servicio de correo
+if EMAIL_TEMPLATES_AVAILABLE:
+    email_service = EmailService(mail)
+else:
+    email_service = None
 
 # Modelos de la base de datos
 class User(UserMixin, db.Model):
@@ -464,6 +489,44 @@ class Notification(db.Model):
         db.session.commit()
 
 
+class EmailLog(db.Model):
+    """Registro completo de todos los emails enviados por el sistema"""
+    id = db.Column(db.Integer, primary_key=True)
+    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # NULL si es email externo
+    recipient_email = db.Column(db.String(120), nullable=False)  # Email del destinatario
+    recipient_name = db.Column(db.String(200))  # Nombre del destinatario
+    subject = db.Column(db.String(500), nullable=False)
+    html_content = db.Column(db.Text)  # Contenido HTML del email
+    text_content = db.Column(db.Text)  # Contenido de texto plano
+    email_type = db.Column(db.String(50), nullable=False)  # membership_payment, event_registration, appointment_confirmation, etc.
+    related_entity_type = db.Column(db.String(50))  # membership, event, appointment, payment, etc.
+    related_entity_id = db.Column(db.Integer)  # ID de la entidad relacionada
+    status = db.Column(db.String(20), default='sent')  # sent, failed, pending
+    error_message = db.Column(db.Text)  # Mensaje de error si falló
+    retry_count = db.Column(db.Integer, default=0)
+    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relaciones
+    recipient = db.relationship('User', backref='email_logs', foreign_keys=[recipient_id])
+    
+    def to_dict(self):
+        """Convertir a diccionario para JSON"""
+        return {
+            'id': self.id,
+            'recipient_email': self.recipient_email,
+            'recipient_name': self.recipient_name,
+            'subject': self.subject,
+            'email_type': self.email_type,
+            'related_entity_type': self.related_entity_type,
+            'related_entity_id': self.related_entity_id,
+            'status': self.status,
+            'retry_count': self.retry_count,
+            'sent_at': self.sent_at.isoformat() if self.sent_at else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
 class EventRegistration(db.Model):
     """Registro completo de eventos con flujo de email y almacenamiento"""
     id = db.Column(db.Integer, primary_key=True)
@@ -820,6 +883,12 @@ def register():
         db.session.add(user)
         db.session.commit()
         
+        # Enviar notificación de bienvenida
+        try:
+            NotificationEngine.notify_welcome(user)
+        except Exception as e:
+            print(f"Error enviando notificación de bienvenida: {e}")
+        
         flash('Registro exitoso. Por favor, inicia sesión.', 'success')
         return redirect(url_for('login'))
     
@@ -1010,7 +1079,20 @@ def settings():
 @login_required
 def notifications():
     """Módulo de Notificaciones"""
-    return render_template('notifications.html')
+    # Obtener notificaciones del usuario
+    user_notifications = Notification.query.filter_by(
+        user_id=current_user.id
+    ).order_by(Notification.created_at.desc()).all()
+    
+    # Contar no leídas
+    unread_count = Notification.query.filter_by(
+        user_id=current_user.id,
+        is_read=False
+    ).count()
+    
+    return render_template('notifications.html', 
+                         notifications=user_notifications,
+                         unread_count=unread_count)
 
 @app.route('/help')
 @login_required
@@ -1184,8 +1266,8 @@ def handle_successful_payment(payment_intent):
             db.session.add(subscription)
             db.session.commit()
             
-            # Enviar email de confirmación
-            send_payment_confirmation_email(payment.user, payment, subscription)
+            # Enviar notificación y email de confirmación
+            NotificationEngine.notify_membership_payment(payment.user, payment, subscription)
             
     except Exception as e:
         print(f"Error handling payment: {e}")
@@ -1229,10 +1311,7 @@ class NotificationEngine:
                     elif event.created_by == recipient.id:
                         role = "Creador"
                     
-                    msg = Message(
-                        subject=f'[RelaticPanama] Nuevo registro: {event.title}',
-                        recipients=[recipient.email],
-                        html=f"""
+                    html_content = f"""
                         <h2>Nuevo Registro al Evento</h2>
                         <p>Hola {recipient.first_name},</p>
                         <p>Como <strong>{role}</strong> del evento, te informamos que se ha registrado un nuevo participante:</p>
@@ -1247,12 +1326,41 @@ class NotificationEngine:
                         <p>Puedes gestionar los registros desde el panel de administración.</p>
                         <p>Saludos,<br>Equipo RelaticPanama</p>
                         """
+                    msg = Message(
+                        subject=f'[RelaticPanama] Nuevo registro: {event.title}',
+                        recipients=[recipient.email],
+                        html=html_content
                     )
                     mail.send(msg)
                     notification.email_sent = True
                     notification.email_sent_at = datetime.utcnow()
+                    # Registrar en EmailLog
+                    log_email_sent(
+                        recipient_email=recipient.email,
+                        subject=f'[RelaticPanama] Nuevo registro: {event.title}',
+                        html_content=html_content,
+                        email_type='event_registration_notification',
+                        related_entity_type='event',
+                        related_entity_id=event.id,
+                        recipient_id=recipient.id,
+                        recipient_name=f"{recipient.first_name} {recipient.last_name}",
+                        status='sent'
+                    )
                 except Exception as e:
                     print(f"Error enviando email de notificación a {recipient.email}: {e}")
+                    # Registrar fallo en EmailLog
+                    log_email_sent(
+                        recipient_email=recipient.email,
+                        subject=f'[RelaticPanama] Nuevo registro: {event.title}',
+                        html_content='',
+                        email_type='event_registration_notification',
+                        related_entity_type='event',
+                        related_entity_id=event.id,
+                        recipient_id=recipient.id,
+                        recipient_name=f"{recipient.first_name} {recipient.last_name}",
+                        status='failed',
+                        error_message=str(e)
+                    )
             
             db.session.commit()
             
@@ -1290,10 +1398,7 @@ class NotificationEngine:
                 db.session.add(notification)
                 
                 try:
-                    msg = Message(
-                        subject=f'[RelaticPanama] Cancelación de registro: {event.title}',
-                        recipients=[recipient.email],
-                        html=f"""
+                    html_content = f"""
                         <h2>Cancelación de Registro</h2>
                         <p>Hola {recipient.first_name},</p>
                         <p>Como <strong>{role}</strong> del evento, te informamos que un participante ha cancelado su registro:</p>
@@ -1305,12 +1410,40 @@ class NotificationEngine:
                         </ul>
                         <p>Saludos,<br>Equipo RelaticPanama</p>
                         """
+                    msg = Message(
+                        subject=f'[RelaticPanama] Cancelación de registro: {event.title}',
+                        recipients=[recipient.email],
+                        html=html_content
                     )
                     mail.send(msg)
                     notification.email_sent = True
                     notification.email_sent_at = datetime.utcnow()
+                    # Registrar en EmailLog
+                    log_email_sent(
+                        recipient_email=recipient.email,
+                        subject=f'[RelaticPanama] Cancelación de registro: {event.title}',
+                        html_content=html_content,
+                        email_type='event_cancellation_notification',
+                        related_entity_type='event',
+                        related_entity_id=event.id,
+                        recipient_id=recipient.id,
+                        recipient_name=f"{recipient.first_name} {recipient.last_name}",
+                        status='sent'
+                    )
                 except Exception as e:
                     print(f"Error enviando email de cancelación a {recipient.email}: {e}")
+                    log_email_sent(
+                        recipient_email=recipient.email,
+                        subject=f'[RelaticPanama] Cancelación de registro: {event.title}',
+                        html_content='',
+                        email_type='event_cancellation_notification',
+                        related_entity_type='event',
+                        related_entity_id=event.id,
+                        recipient_id=recipient.id,
+                        recipient_name=f"{recipient.first_name} {recipient.last_name}",
+                        status='failed',
+                        error_message=str(e)
+                    )
             
             db.session.commit()
             
@@ -1348,10 +1481,7 @@ class NotificationEngine:
                 db.session.add(notification)
                 
                 try:
-                    msg = Message(
-                        subject=f'[RelaticPanama] Registro confirmado: {event.title}',
-                        recipients=[recipient.email],
-                        html=f"""
+                    html_content = f"""
                         <h2>Registro Confirmado</h2>
                         <p>Hola {recipient.first_name},</p>
                         <p>Como <strong>{role}</strong> del evento, te informamos que un registro ha sido confirmado:</p>
@@ -1363,12 +1493,40 @@ class NotificationEngine:
                         </ul>
                         <p>Saludos,<br>Equipo RelaticPanama</p>
                         """
+                    msg = Message(
+                        subject=f'[RelaticPanama] Registro confirmado: {event.title}',
+                        recipients=[recipient.email],
+                        html=html_content
                     )
                     mail.send(msg)
                     notification.email_sent = True
                     notification.email_sent_at = datetime.utcnow()
+                    # Registrar en EmailLog
+                    log_email_sent(
+                        recipient_email=recipient.email,
+                        subject=f'[RelaticPanama] Registro confirmado: {event.title}',
+                        html_content=html_content,
+                        email_type='event_confirmation_notification',
+                        related_entity_type='event',
+                        related_entity_id=event.id,
+                        recipient_id=recipient.id,
+                        recipient_name=f"{recipient.first_name} {recipient.last_name}",
+                        status='sent'
+                    )
                 except Exception as e:
                     print(f"Error enviando email de confirmación a {recipient.email}: {e}")
+                    log_email_sent(
+                        recipient_email=recipient.email,
+                        subject=f'[RelaticPanama] Registro confirmado: {event.title}',
+                        html_content='',
+                        email_type='event_confirmation_notification',
+                        related_entity_type='event',
+                        related_entity_id=event.id,
+                        recipient_id=recipient.id,
+                        recipient_name=f"{recipient.first_name} {recipient.last_name}",
+                        status='failed',
+                        error_message=str(e)
+                    )
             
             db.session.commit()
             
@@ -1414,37 +1572,381 @@ class NotificationEngine:
                     db.session.add(user_notification)
                     
                     try:
-                        msg = Message(
-                            subject=f'[RelaticPanama] Actualización: {event.title}',
-                            recipients=[user.email],
-                            html=f"""
+                        html_content = f"""
                             <h2>Evento Actualizado</h2>
                             <p>Hola {user.first_name},</p>
                             <p>El evento "{event.title}" al que estás registrado ha sido actualizado.</p>
                             <p>Te recomendamos revisar los detalles del evento en la plataforma.</p>
                             <p>Saludos,<br>Equipo RelaticPanama</p>
                             """
+                        msg = Message(
+                            subject=f'[RelaticPanama] Actualización: {event.title}',
+                            recipients=[user.email],
+                            html=html_content
                         )
                         mail.send(msg)
                         user_notification.email_sent = True
                         user_notification.email_sent_at = datetime.utcnow()
+                        # Registrar en EmailLog
+                        log_email_sent(
+                            recipient_email=user.email,
+                            subject=f'[RelaticPanama] Actualización: {event.title}',
+                            html_content=html_content,
+                            email_type='event_update',
+                            related_entity_type='event',
+                            related_entity_id=event.id,
+                            recipient_id=user.id,
+                            recipient_name=f"{user.first_name} {user.last_name}",
+                            status='sent'
+                        )
                     except Exception as e:
                         print(f"Error enviando email de actualización a {user.email}: {e}")
+                        log_email_sent(
+                            recipient_email=user.email,
+                            subject=f'[RelaticPanama] Actualización: {event.title}',
+                            html_content='',
+                            email_type='event_update',
+                            related_entity_type='event',
+                            related_entity_id=event.id,
+                            recipient_id=user.id,
+                            recipient_name=f"{user.first_name} {user.last_name}",
+                            status='failed',
+                            error_message=str(e)
+                        )
             
             db.session.commit()
             
         except Exception as e:
             print(f"Error en notify_event_update: {e}")
             db.session.rollback()
+    
+    @staticmethod
+    def notify_membership_payment(user, payment, subscription):
+        """Notificar confirmación de pago de membresía"""
+        try:
+            # Crear notificación
+            notification = Notification(
+                user_id=user.id,
+                notification_type='membership_payment',
+                title='Pago de Membresía Confirmado',
+                message=f'Tu pago por la membresía {payment.membership_type.title()} ha sido procesado exitosamente. Válida hasta {subscription.end_date.strftime("%d/%m/%Y")}.'
+            )
+            db.session.add(notification)
+            
+            # Enviar email
+            if EMAIL_TEMPLATES_AVAILABLE and email_service:
+                html_content = get_membership_payment_confirmation_email(user, payment, subscription)
+                email_service.send_email(
+                    subject='Confirmación de Pago - RelaticPanama',
+                    recipients=[user.email],
+                    html_content=html_content,
+                    email_type='membership_payment',
+                    related_entity_type='payment',
+                    related_entity_id=payment.id,
+                    recipient_id=user.id,
+                    recipient_name=f"{user.first_name} {user.last_name}"
+                )
+                notification.email_sent = True
+                notification.email_sent_at = datetime.utcnow()
+            else:
+                # Fallback al método anterior
+                send_payment_confirmation_email(user, payment, subscription)
+                notification.email_sent = True
+                notification.email_sent_at = datetime.utcnow()
+            
+            db.session.commit()
+        except Exception as e:
+            print(f"Error en notify_membership_payment: {e}")
+            db.session.rollback()
+    
+    @staticmethod
+    def notify_membership_expiring(user, subscription, days_left):
+        """Notificar que la membresía está por expirar"""
+        try:
+            notification = Notification(
+                user_id=user.id,
+                notification_type='membership_expiring',
+                title=f'Membresía Expirará en {days_left} Días',
+                message=f'Tu membresía {subscription.membership_type.title()} expirará el {subscription.end_date.strftime("%d/%m/%Y")}. Renueva ahora para continuar disfrutando de todos los beneficios.'
+            )
+            db.session.add(notification)
+            
+            if EMAIL_TEMPLATES_AVAILABLE and email_service:
+                html_content = get_membership_expiring_email(user, subscription, days_left)
+                email_service.send_email(
+                    subject=f'Tu Membresía Expirará en {days_left} Días - RelaticPanama',
+                    recipients=[user.email],
+                    html_content=html_content,
+                    email_type='membership_expiring',
+                    related_entity_type='subscription',
+                    related_entity_id=subscription.id,
+                    recipient_id=user.id,
+                    recipient_name=f"{user.first_name} {user.last_name}"
+                )
+                notification.email_sent = True
+                notification.email_sent_at = datetime.utcnow()
+            
+            db.session.commit()
+        except Exception as e:
+            print(f"Error en notify_membership_expiring: {e}")
+            db.session.rollback()
+    
+    @staticmethod
+    def notify_membership_expired(user, subscription):
+        """Notificar que la membresía ha expirado"""
+        try:
+            notification = Notification(
+                user_id=user.id,
+                notification_type='membership_expired',
+                title='Membresía Expirada',
+                message=f'Tu membresía {subscription.membership_type.title()} ha expirado. Renueva ahora para reactivar tus beneficios.'
+            )
+            db.session.add(notification)
+            
+            if EMAIL_TEMPLATES_AVAILABLE and email_service:
+                html_content = get_membership_expired_email(user, subscription)
+                email_service.send_email(
+                    subject='Tu Membresía Ha Expirado - RelaticPanama',
+                    recipients=[user.email],
+                    html_content=html_content,
+                    email_type='membership_expired',
+                    related_entity_type='subscription',
+                    related_entity_id=subscription.id,
+                    recipient_id=user.id,
+                    recipient_name=f"{user.first_name} {user.last_name}"
+                )
+                notification.email_sent = True
+                notification.email_sent_at = datetime.utcnow()
+            
+            db.session.commit()
+        except Exception as e:
+            print(f"Error en notify_membership_expired: {e}")
+            db.session.rollback()
+    
+    @staticmethod
+    def notify_membership_renewed(user, subscription):
+        """Notificar renovación de membresía"""
+        try:
+            notification = Notification(
+                user_id=user.id,
+                notification_type='membership_renewed',
+                title='Membresía Renovada',
+                message=f'Tu membresía {subscription.membership_type.title()} ha sido renovada exitosamente. Válida hasta {subscription.end_date.strftime("%d/%m/%Y")}.'
+            )
+            db.session.add(notification)
+            
+            if EMAIL_TEMPLATES_AVAILABLE and email_service:
+                html_content = get_membership_renewed_email(user, subscription)
+                email_service.send_email(
+                    subject='Membresía Renovada - RelaticPanama',
+                    recipients=[user.email],
+                    html_content=html_content,
+                    email_type='membership_renewed',
+                    related_entity_type='subscription',
+                    related_entity_id=subscription.id,
+                    recipient_id=user.id,
+                    recipient_name=f"{user.first_name} {user.last_name}"
+                )
+                notification.email_sent = True
+                notification.email_sent_at = datetime.utcnow()
+            
+            db.session.commit()
+        except Exception as e:
+            print(f"Error en notify_membership_renewed: {e}")
+            db.session.rollback()
+    
+    @staticmethod
+    def notify_appointment_confirmation(appointment, user, advisor):
+        """Notificar confirmación de cita"""
+        try:
+            notification = Notification(
+                user_id=user.id,
+                notification_type='appointment_confirmation',
+                title='Cita Confirmada',
+                message=f'Tu cita con {advisor.first_name} {advisor.last_name} ha sido confirmada para el {appointment.appointment_date.strftime("%d/%m/%Y")} a las {appointment.appointment_time}.'
+            )
+            db.session.add(notification)
+            
+            if EMAIL_TEMPLATES_AVAILABLE and email_service:
+                html_content = get_appointment_confirmation_email(appointment, user, advisor)
+                email_service.send_email(
+                    subject='Cita Confirmada - RelaticPanama',
+                    recipients=[user.email],
+                    html_content=html_content,
+                    email_type='appointment_confirmation',
+                    related_entity_type='appointment',
+                    related_entity_id=appointment.id,
+                    recipient_id=user.id,
+                    recipient_name=f"{user.first_name} {user.last_name}"
+                )
+                notification.email_sent = True
+                notification.email_sent_at = datetime.utcnow()
+            
+            db.session.commit()
+        except Exception as e:
+            print(f"Error en notify_appointment_confirmation: {e}")
+            db.session.rollback()
+    
+    @staticmethod
+    def notify_appointment_reminder(appointment, user, advisor, hours_before=24):
+        """Notificar recordatorio de cita"""
+        try:
+            notification = Notification(
+                user_id=user.id,
+                notification_type='appointment_reminder',
+                title=f'Recordatorio: Cita en {hours_before} horas',
+                message=f'Recuerda que tienes una cita con {advisor.first_name} {advisor.last_name} el {appointment.appointment_date.strftime("%d/%m/%Y")} a las {appointment.appointment_time}.'
+            )
+            db.session.add(notification)
+            
+            if EMAIL_TEMPLATES_AVAILABLE and email_service:
+                html_content = get_appointment_reminder_email(appointment, user, advisor, hours_before)
+                email_service.send_email(
+                    subject=f'Recordatorio: Cita en {hours_before} horas - RelaticPanama',
+                    recipients=[user.email],
+                    html_content=html_content,
+                    email_type='appointment_reminder',
+                    related_entity_type='appointment',
+                    related_entity_id=appointment.id,
+                    recipient_id=user.id,
+                    recipient_name=f"{user.first_name} {user.last_name}"
+                )
+                notification.email_sent = True
+                notification.email_sent_at = datetime.utcnow()
+            
+            db.session.commit()
+        except Exception as e:
+            print(f"Error en notify_appointment_reminder: {e}")
+            db.session.rollback()
+    
+    @staticmethod
+    def notify_welcome(user):
+        """Notificar bienvenida a nuevo usuario"""
+        try:
+            notification = Notification(
+                user_id=user.id,
+                notification_type='welcome',
+                title='¡Bienvenido a RelaticPanama!',
+                message='Te damos la bienvenida a RelaticPanama. Explora nuestros eventos, recursos y servicios disponibles.'
+            )
+            db.session.add(notification)
+            
+            if EMAIL_TEMPLATES_AVAILABLE and email_service:
+                html_content = get_welcome_email(user)
+                email_service.send_email(
+                    subject='Bienvenido a RelaticPanama',
+                    recipients=[user.email],
+                    html_content=html_content,
+                    email_type='welcome',
+                    related_entity_type='user',
+                    related_entity_id=user.id,
+                    recipient_id=user.id,
+                    recipient_name=f"{user.first_name} {user.last_name}"
+                )
+                notification.email_sent = True
+                notification.email_sent_at = datetime.utcnow()
+            
+            db.session.commit()
+        except Exception as e:
+            print(f"Error en notify_welcome: {e}")
+            db.session.rollback()
+    
+    @staticmethod
+    def notify_event_registration_to_user(event, user, registration):
+        """Notificar al usuario sobre su registro a evento"""
+        try:
+            notification = Notification(
+                user_id=user.id,
+                event_id=event.id,
+                notification_type='event_registration_user',
+                title=f'Registro Confirmado: {event.title}',
+                message=f'Tu registro al evento "{event.title}" ha sido confirmado. Estado: {registration.registration_status}.'
+            )
+            db.session.add(notification)
+            
+            if EMAIL_TEMPLATES_AVAILABLE and email_service:
+                html_content = get_event_registration_email(event, user, registration)
+                email_service.send_email(
+                    subject=f'Registro Confirmado: {event.title}',
+                    recipients=[user.email],
+                    html_content=html_content,
+                    email_type='event_registration',
+                    related_entity_type='event',
+                    related_entity_id=event.id,
+                    recipient_id=user.id,
+                    recipient_name=f"{user.first_name} {user.last_name}"
+                )
+                notification.email_sent = True
+                notification.email_sent_at = datetime.utcnow()
+            
+            db.session.commit()
+        except Exception as e:
+            print(f"Error en notify_event_registration_to_user: {e}")
+            db.session.rollback()
+    
+    @staticmethod
+    def notify_event_cancellation_to_user(event, user):
+        """Notificar al usuario sobre cancelación de registro"""
+        try:
+            notification = Notification(
+                user_id=user.id,
+                event_id=event.id,
+                notification_type='event_cancellation_user',
+                title=f'Registro Cancelado: {event.title}',
+                message=f'Tu registro al evento "{event.title}" ha sido cancelado.'
+            )
+            db.session.add(notification)
+            
+            if EMAIL_TEMPLATES_AVAILABLE and email_service:
+                html_content = get_event_cancellation_email(event, user)
+                email_service.send_email(
+                    subject=f'Cancelación de Registro: {event.title}',
+                    recipients=[user.email],
+                    html_content=html_content,
+                    email_type='event_cancellation',
+                    related_entity_type='event',
+                    related_entity_id=event.id,
+                    recipient_id=user.id,
+                    recipient_name=f"{user.first_name} {user.last_name}"
+                )
+                notification.email_sent = True
+                notification.email_sent_at = datetime.utcnow()
+            
+            db.session.commit()
+        except Exception as e:
+            print(f"Error en notify_event_cancellation_to_user: {e}")
+            db.session.rollback()
 
+
+def log_email_sent(recipient_email, subject, html_content, text_content=None, 
+                   email_type=None, related_entity_type=None, related_entity_id=None,
+                   recipient_id=None, recipient_name=None, status='sent', error_message=None):
+    """Registrar un email enviado en EmailLog"""
+    try:
+        email_log = EmailLog(
+            recipient_id=recipient_id,
+            recipient_email=recipient_email,
+            recipient_name=recipient_name or recipient_email,
+            subject=subject,
+            html_content=html_content[:5000] if html_content else None,
+            text_content=text_content[:5000] if text_content else None,
+            email_type=email_type or 'general',
+            related_entity_type=related_entity_type,
+            related_entity_id=related_entity_id,
+            status=status,
+            error_message=error_message[:1000] if error_message else None,
+            sent_at=datetime.utcnow() if status == 'sent' else None
+        )
+        db.session.add(email_log)
+        db.session.commit()
+    except Exception as e:
+        print(f"Error registrando email en log: {e}")
+        db.session.rollback()
 
 def send_payment_confirmation_email(user, payment, subscription):
     """Enviar email de confirmación de pago"""
     try:
-        msg = Message(
-            subject='Confirmación de Pago - RelaticPanama',
-            recipients=[user.email],
-            html=f"""
+        html_content = f"""
             <h2>¡Pago Confirmado!</h2>
             <p>Hola {user.first_name},</p>
             <p>Tu pago por la membresía {payment.membership_type.title()} ha sido procesado exitosamente.</p>
@@ -1458,10 +1960,39 @@ def send_payment_confirmation_email(user, payment, subscription):
             <p>Ya puedes acceder a todos los beneficios de tu membresía.</p>
             <p>¡Gracias por ser parte de RelaticPanama!</p>
             """
+        msg = Message(
+            subject='Confirmación de Pago - RelaticPanama',
+            recipients=[user.email],
+            html=html_content
         )
         mail.send(msg)
+        # Registrar en EmailLog
+        log_email_sent(
+            recipient_email=user.email,
+            subject='Confirmación de Pago - RelaticPanama',
+            html_content=html_content,
+            email_type='membership_payment',
+            related_entity_type='payment',
+            related_entity_id=payment.id,
+            recipient_id=user.id,
+            recipient_name=f"{user.first_name} {user.last_name}",
+            status='sent'
+        )
     except Exception as e:
         print(f"Error sending email: {e}")
+        # Registrar fallo en EmailLog
+        log_email_sent(
+            recipient_email=user.email,
+            subject='Confirmación de Pago - RelaticPanama',
+            html_content='',
+            email_type='membership_payment',
+            related_entity_type='payment',
+            related_entity_id=payment.id,
+            recipient_id=user.id,
+            recipient_name=f"{user.first_name} {user.last_name}",
+            status='failed',
+            error_message=str(e)
+        )
 
 @app.route('/api/user/membership')
 @login_required
@@ -1569,6 +2100,163 @@ def admin_memberships():
     memberships = Membership.query.order_by(Membership.created_at.desc()).all()
     return render_template('admin/memberships.html', memberships=memberships)
 
+# Rutas administrativas para gestión de mensajería
+@app.route('/admin/messaging')
+@admin_required
+def admin_messaging():
+    """Lista de todos los emails enviados"""
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 50, type=int)
+    email_type = request.args.get('type', 'all')
+    status = request.args.get('status', 'all')
+    search = request.args.get('search', '')
+    
+    # Construir query
+    query = EmailLog.query
+    
+    # Filtros
+    if email_type != 'all':
+        query = query.filter_by(email_type=email_type)
+    
+    if status != 'all':
+        query = query.filter_by(status=status)
+    
+    if search:
+        query = query.filter(
+            db.or_(
+                EmailLog.recipient_email.ilike(f'%{search}%'),
+                EmailLog.subject.ilike(f'%{search}%'),
+                EmailLog.recipient_name.ilike(f'%{search}%')
+            )
+        )
+    
+    # Ordenar por fecha más reciente
+    query = query.order_by(EmailLog.created_at.desc())
+    
+    # Paginación
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    emails = pagination.items
+    
+    # Estadísticas
+    total_emails = EmailLog.query.count()
+    sent_emails = EmailLog.query.filter_by(status='sent').count()
+    failed_emails = EmailLog.query.filter_by(status='failed').count()
+    
+    # Tipos de email únicos para el filtro
+    email_types = db.session.query(EmailLog.email_type).distinct().all()
+    email_types = [t[0] for t in email_types if t[0]]
+    
+    return render_template('admin/messaging.html',
+                         emails=emails,
+                         pagination=pagination,
+                         total_emails=total_emails,
+                         sent_emails=sent_emails,
+                         failed_emails=failed_emails,
+                         email_types=email_types,
+                         current_type=email_type,
+                         current_status=status,
+                         search=search)
+
+@app.route('/admin/messaging/<int:email_id>')
+@admin_required
+def admin_messaging_detail(email_id):
+    """Detalle de un email específico"""
+    email_log = EmailLog.query.get_or_404(email_id)
+    return render_template('admin/messaging_detail.html', email_log=email_log)
+
+@app.route('/admin/messaging/<int:email_id>/resend', methods=['POST'])
+@admin_required
+def admin_messaging_resend(email_id):
+    """Reenviar un email que falló"""
+    email_log = EmailLog.query.get_or_404(email_id)
+    
+    if email_log.status == 'sent':
+        flash('Este email ya fue enviado exitosamente.', 'info')
+        return redirect(url_for('admin_messaging_detail', email_id=email_id))
+    
+    try:
+        # Intentar reenviar
+        if email_service:
+            success = email_service.send_email(
+                subject=email_log.subject,
+                recipients=[email_log.recipient_email],
+                html_content=email_log.html_content or '',
+                text_content=email_log.text_content,
+                email_type=email_log.email_type,
+                related_entity_type=email_log.related_entity_type,
+                related_entity_id=email_log.related_entity_id,
+                recipient_id=email_log.recipient_id,
+                recipient_name=email_log.recipient_name
+            )
+            
+            if success:
+                email_log.status = 'sent'
+                email_log.sent_at = datetime.utcnow()
+                email_log.error_message = None
+                db.session.commit()
+                flash('Email reenviado exitosamente.', 'success')
+            else:
+                email_log.status = 'failed'
+                email_log.retry_count += 1
+                db.session.commit()
+                flash('Error al reenviar el email. Verifica la configuración del servidor de correo.', 'error')
+        else:
+            flash('Servicio de email no disponible.', 'error')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al reenviar: {str(e)}', 'error')
+    
+    return redirect(url_for('admin_messaging_detail', email_id=email_id))
+
+@app.route('/admin/messaging/<int:email_id>/delete', methods=['POST'])
+@admin_required
+def admin_messaging_delete(email_id):
+    """Eliminar un registro de email"""
+    email_log = EmailLog.query.get_or_404(email_id)
+    
+    try:
+        db.session.delete(email_log)
+        db.session.commit()
+        flash('Registro de email eliminado.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al eliminar: {str(e)}', 'error')
+    
+    return redirect(url_for('admin_messaging'))
+
+@app.route('/api/admin/messaging/stats')
+@admin_required
+def api_messaging_stats():
+    """API para obtener estadísticas de mensajería"""
+    total = EmailLog.query.count()
+    sent = EmailLog.query.filter_by(status='sent').count()
+    failed = EmailLog.query.filter_by(status='failed').count()
+    
+    # Estadísticas por tipo
+    from sqlalchemy import func
+    stats_by_type = db.session.query(
+        EmailLog.email_type,
+        func.count(EmailLog.id).label('count')
+    ).group_by(EmailLog.email_type).all()
+    
+    # Estadísticas por día (últimos 30 días)
+    from datetime import timedelta
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    stats_by_day = db.session.query(
+        func.date(EmailLog.created_at).label('date'),
+        func.count(EmailLog.id).label('count')
+    ).filter(
+        EmailLog.created_at >= thirty_days_ago
+    ).group_by(func.date(EmailLog.created_at)).all()
+    
+    return jsonify({
+        'total': total,
+        'sent': sent,
+        'failed': failed,
+        'by_type': {t[0]: t[1] for t in stats_by_type},
+        'by_day': [{'date': str(d[0]), 'count': d[1]} for d in stats_by_day]
+    })
+
 # Registrar blueprints de eventos
 try:
     from event_routes import events_bp, admin_events_bp, events_api_bp
@@ -1608,44 +2296,157 @@ def create_sample_data():
 @app.route('/api/notifications')
 @login_required
 def api_notifications():
-    """API para obtener notificaciones del usuario actual"""
+    """API para obtener notificaciones del usuario"""
+    # Obtener filtros de query params
+    notification_type = request.args.get('type', 'all')
+    status = request.args.get('status', 'all')  # all, read, unread
+    limit = int(request.args.get('limit', 50))
+    
+    # Construir query
+    query = Notification.query.filter_by(user_id=current_user.id)
+    
+    # Filtrar por tipo
+    if notification_type != 'all':
+        query = query.filter_by(notification_type=notification_type)
+    
+    # Filtrar por estado
+    if status == 'read':
+        query = query.filter_by(is_read=True)
+    elif status == 'unread':
+        query = query.filter_by(is_read=False)
+    
+    # Obtener conteos
     unread_count = Notification.query.filter_by(
         user_id=current_user.id,
         is_read=False
     ).count()
     
-    notifications = Notification.query.filter_by(
-        user_id=current_user.id
-    ).order_by(Notification.created_at.desc()).limit(20).all()
+    # Obtener notificaciones
+    notifications = query.order_by(Notification.created_at.desc()).limit(limit).all()
     
     return jsonify({
         'unread_count': unread_count,
+        'total': len(notifications),
         'notifications': [{
             'id': n.id,
             'title': n.title,
             'message': n.message,
             'type': n.notification_type,
             'is_read': n.is_read,
-            'created_at': n.created_at.isoformat(),
-            'event_id': n.event_id
+            'event_id': n.event_id,
+            'created_at': n.created_at.isoformat() if n.created_at else None,
+            'email_sent': n.email_sent,
+            'email_sent_at': n.email_sent_at.isoformat() if n.email_sent_at else None
         } for n in notifications]
     })
 
 @app.route('/api/notifications/<int:notification_id>/read', methods=['POST'])
 @login_required
 def mark_notification_read(notification_id):
-    """Marcar una notificación como leída"""
+    """Marcar notificación como leída"""
+    notification = Notification.query.filter_by(
+        id=notification_id,
+        user_id=current_user.id
+    ).first_or_404()
+    notification.mark_as_read()
+    return jsonify({'success': True, 'message': 'Notificación marcada como leída'})
+
+@app.route('/api/notifications/read-all', methods=['POST'])
+@login_required
+def mark_all_notifications_read():
+    """Marcar todas las notificaciones como leídas"""
+    try:
+        Notification.query.filter_by(
+            user_id=current_user.id,
+            is_read=False
+        ).update({'is_read': True})
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Todas las notificaciones han sido marcadas como leídas'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/notifications/<int:notification_id>', methods=['DELETE'])
+@login_required
+def delete_notification(notification_id):
+    """Eliminar notificación"""
     notification = Notification.query.filter_by(
         id=notification_id,
         user_id=current_user.id
     ).first_or_404()
     
-    notification.mark_as_read()
-    return jsonify({'success': True})
+    try:
+        db.session.delete(notification)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Notificación eliminada'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+def ensure_email_log_columns():
+    """Asegurar que todas las columnas necesarias existan en la tabla email_log"""
+    try:
+        from sqlalchemy import inspect, text
+        
+        # Verificar si la tabla existe
+        inspector = inspect(db.engine)
+        if 'email_log' not in inspector.get_table_names():
+            print("🔧 Tabla email_log no existe. Creándola...")
+            # Crear la tabla usando el modelo
+            EmailLog.__table__.create(db.engine, checkfirst=True)
+            print("✅ Tabla email_log creada exitosamente con todas las columnas")
+            return
+        
+        columns = [col['name'] for col in inspector.get_columns('email_log')]
+        print(f"📋 Columnas actuales en email_log: {', '.join(columns)}")
+        
+        # Definir todas las columnas que debería tener según el modelo EmailLog
+        required_columns = {
+            'recipient_id': 'INTEGER',
+            'recipient_email': 'VARCHAR(120)',
+            'recipient_name': 'VARCHAR(200)',
+            'subject': 'VARCHAR(500)',
+            'html_content': 'TEXT',
+            'text_content': 'TEXT',
+            'email_type': 'VARCHAR(50)',
+            'related_entity_type': 'VARCHAR(50)',
+            'related_entity_id': 'INTEGER',
+            'status': 'VARCHAR(20)',
+            'error_message': 'TEXT',
+            'retry_count': 'INTEGER',
+            'sent_at': 'DATETIME',
+            'created_at': 'DATETIME'
+        }
+        
+        # Agregar columnas faltantes
+        added_columns = []
+        for col_name, col_type in required_columns.items():
+            if col_name not in columns:
+                print(f"🔧 Agregando columna '{col_name}' ({col_type}) a la tabla email_log...")
+                try:
+                    with db.engine.connect() as conn:
+                        conn.execute(text(f"ALTER TABLE email_log ADD COLUMN {col_name} {col_type}"))
+                        conn.commit()
+                    print(f"✅ Columna '{col_name}' agregada correctamente")
+                    added_columns.append(col_name)
+                except Exception as col_error:
+                    print(f"⚠️ Error agregando columna '{col_name}': {col_error}")
+        
+        if added_columns:
+            print(f"✅ Migración completada: {len(added_columns)} columnas agregadas: {', '.join(added_columns)}")
+        else:
+            print("✅ Todas las columnas necesarias ya existen en email_log")
+        
+    except Exception as e:
+        print(f"⚠️ Error verificando columnas de email_log: {e}")
+        import traceback
+        traceback.print_exc()
+        # No lanzar excepción para no bloquear el inicio de la app
 
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+        ensure_email_log_columns()  # Asegurar columnas antes de crear datos de muestra
         create_sample_data()
     
     app.run(host='0.0.0.0', port=9000, debug=True)
