@@ -68,6 +68,9 @@ logs/
 instance/
 .webassets-cache
 
+# User uploads
+static/uploads/
+
 # Coverage reports
 htmlcov/
 .coverage
