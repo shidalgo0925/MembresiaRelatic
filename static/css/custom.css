@@ -285,6 +285,25 @@
 .dropdown-menu {
     background-color: #1f2937;
     border: 1px solid #374151;
+    min-width: 180px;
+}
+
+.dropdown-menu-end {
+    right: 0;
+    left: auto;
+}
+
+/* Asegurar que el dropdown no se corte en el borde izquierdo */
+.navbar-nav .dropdown-menu {
+    margin-right: 0;
+    margin-left: auto;
+}
+
+@media (max-width: 991px) {
+    .dropdown-menu-end {
+        right: auto;
+        left: 0;
+    }
 }
 
 .dropdown-item {
@@ -502,12 +521,14 @@ body.sidebar-collapsed .sidebar-brand-narrow {
 }
 
 body.sidebar-collapsed .sidebar-brand {
-    padding: 16px 8px;
+    padding: 12px 8px;
     justify-content: center;
+    align-items: center;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
     min-height: auto;
+    background: #2d3b45;
 }
 
 body.sidebar-collapsed .sidebar-brand .menu-hamburger-btn {
@@ -520,9 +541,18 @@ body.sidebar-collapsed .sidebar-brand .menu-hamburger-btn:hover {
     color: #ffffff;
 }
 
+body.sidebar-collapsed .sidebar-brand-narrow {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 0;
+}
+
 body.sidebar-collapsed .sidebar-brand-narrow i {
-    font-size: 24px;
+    font-size: 28px;
     color: #FFD700 !important;
+    display: block;
 }
 
 .sidebar-brand-icon {
@@ -543,7 +573,7 @@ body.sidebar-collapsed .sidebar-brand-narrow i {
 }
 
 body.sidebar-collapsed aside.left-panel {
-    width: 80px;
+    width: 70px;
     padding: 0;
     background: #2d3b45;
 }
@@ -571,20 +601,22 @@ body.sidebar-collapsed .navbar .navbar-nav li {
 /* Centrar iconos cuando está colapsado */
 body.sidebar-collapsed .navbar .navbar-nav li > a {
     justify-content: center;
-    padding: 12px 0;
+    padding: 14px 0;
     text-align: center;
-    border-left: none;
+    border-left: 3px solid transparent;
     display: flex;
     align-items: center;
+    color: #e0e0e0;
+    position: relative;
 }
 
 body.sidebar-collapsed .navbar .navbar-nav li > a .menu-icon {
     float: none !important;
-    margin: 0 auto;
+    margin: 0 auto !important;
     text-align: center;
-    width: 20px !important;
+    width: 24px !important;
     margin-right: 0 !important;
-    font-size: 18px !important;
+    font-size: 20px !important;
     color: #e0e0e0 !important;
     background: transparent !important;
     border-radius: 0;
@@ -600,18 +632,23 @@ body.sidebar-collapsed .navbar .navbar-nav li > a .menu-icon {
 /* Hover y active cuando está colapsado - estilo dark */
 body.sidebar-collapsed .navbar .navbar-nav li > a:hover {
     background: rgba(255, 255, 255, 0.1) !important;
+    border-left: 3px solid rgba(255, 255, 255, 0.3) !important;
 }
 
 body.sidebar-collapsed .navbar .navbar-nav li > a:hover .menu-icon {
     color: #ffffff !important;
+    transform: scale(1.1);
 }
 
 /* Active state en iconos colapsados */
-body.sidebar-collapsed .navbar .navbar-nav > .active > a {
-    background: rgba(0, 142, 226, 0.2) !important;
+body.sidebar-collapsed .navbar .navbar-nav > .active > a,
+body.sidebar-collapsed .navbar .navbar-nav .nav-link.active {
+    background: rgba(0, 142, 226, 0.15) !important;
+    border-left: 3px solid #008ee2 !important;
 }
 
-body.sidebar-collapsed .navbar .navbar-nav > .active > a .menu-icon {
+body.sidebar-collapsed .navbar .navbar-nav > .active > a .menu-icon,
+body.sidebar-collapsed .navbar .navbar-nav .nav-link.active .menu-icon {
     color: #008ee2 !important;
 }
 
@@ -699,8 +736,14 @@ body.sidebar-collapsed .nav-group-toggle {
 
 /* Ajustar nav-link cuando está colapsado */
 body.sidebar-collapsed .navbar .navbar-nav .nav-link {
-    padding: 12px 0 !important;
+    padding: 14px 0 !important;
     justify-content: center;
+    position: relative;
+}
+
+/* Tooltips cuando está colapsado */
+body.sidebar-collapsed .navbar .navbar-nav .nav-link[data-bs-toggle="tooltip"] {
+    cursor: pointer;
 }
 
 .submenu li {

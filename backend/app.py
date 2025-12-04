@@ -47,7 +47,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY', 'sk_test_your_stripe_secret_key_here')
 STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', 'pk_test_your_stripe_publishable_key_here')
 
-# Configuración de Mail
+# Configuración de Mail (valores por defecto, se pueden sobrescribir desde BD)
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
@@ -60,6 +60,27 @@ db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 mail = Mail(app)
+
+# Aplicar configuración de email desde BD si existe (después de crear las tablas)
+def apply_email_config_from_db():
+    """Aplicar configuración de email desde la base de datos"""
+    try:
+        # EmailConfig ya está definido arriba, no necesita import
+        email_config = EmailConfig.get_active_config()
+        if email_config:
+            email_config.apply_to_app(app)
+            # Reinicializar Mail con nueva configuración
+            global mail
+            mail = Mail(app)
+            if EMAIL_TEMPLATES_AVAILABLE:
+                global email_service
+                email_service = EmailService(mail)
+            print("✅ Configuración de email cargada desde base de datos")
+    except Exception as e:
+        print(f"⚠️ No se pudo cargar configuración de email desde BD: {e}")
+        print("   Usando configuración por defecto o variables de entorno")
+        import traceback
+        traceback.print_exc()
 login_manager.login_view = 'login'
 login_manager.login_message = 'Por favor, inicia sesión para acceder a esta página.'
 
@@ -77,6 +98,8 @@ class User(UserMixin, db.Model):
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
     phone = db.Column(db.String(20))
+    tags = db.Column(db.String(500))  # Etiquetas separadas por comas
+    user_group = db.Column(db.String(100))  # Grupo del usuario
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
     is_admin = db.Column(db.Boolean, default=False)  # Campo para administradores
@@ -525,6 +548,142 @@ class EmailLog(db.Model):
             'sent_at': self.sent_at.isoformat() if self.sent_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
+
+
+class EmailConfig(db.Model):
+    """Configuración del servidor de correo SMTP"""
+    id = db.Column(db.Integer, primary_key=True)
+    mail_server = db.Column(db.String(200), nullable=False, default='smtp.gmail.com')
+    mail_port = db.Column(db.Integer, nullable=False, default=587)
+    mail_use_tls = db.Column(db.Boolean, default=True)
+    mail_use_ssl = db.Column(db.Boolean, default=False)
+    mail_username = db.Column(db.String(200))  # Se puede dejar vacío si se usa variable de entorno
+    mail_password = db.Column(db.String(500))  # Encriptado o en variable de entorno
+    mail_default_sender = db.Column(db.String(200), nullable=False, default='noreply@relaticpanama.org')
+    use_environment_variables = db.Column(db.Boolean, default=True)  # Si usa vars de entorno o BD
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self):
+        """Convertir a diccionario para JSON (sin password)"""
+        return {
+            'id': self.id,
+            'mail_server': self.mail_server,
+            'mail_port': self.mail_port,
+            'mail_use_tls': self.mail_use_tls,
+            'mail_use_ssl': self.mail_use_ssl,
+            'mail_username': self.mail_username if not self.use_environment_variables else '[Desde variables de entorno]',
+            'mail_default_sender': self.mail_default_sender,
+            'use_environment_variables': self.use_environment_variables,
+            'is_active': self.is_active,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+    
+    @staticmethod
+    def get_active_config():
+        """Obtener la configuración activa de email"""
+        return EmailConfig.query.filter_by(is_active=True).first()
+    
+    def apply_to_app(self, app_instance):
+        """Aplicar esta configuración a la instancia de Flask"""
+        if self.use_environment_variables:
+            # Usar variables de entorno si está configurado así
+            app_instance.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', self.mail_server)
+            app_instance.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', self.mail_port))
+            app_instance.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
+            app_instance.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'False').lower() == 'true'
+            app_instance.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', self.mail_username or '')
+            app_instance.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', self.mail_password or '')
+            app_instance.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', self.mail_default_sender)
+        else:
+            # Usar valores de la base de datos
+            app_instance.config['MAIL_SERVER'] = self.mail_server
+            app_instance.config['MAIL_PORT'] = self.mail_port
+            app_instance.config['MAIL_USE_TLS'] = self.mail_use_tls
+            app_instance.config['MAIL_USE_SSL'] = self.mail_use_ssl
+            app_instance.config['MAIL_USERNAME'] = self.mail_username or ''
+            app_instance.config['MAIL_PASSWORD'] = self.mail_password or ''
+            app_instance.config['MAIL_DEFAULT_SENDER'] = self.mail_default_sender
+
+
+class EmailTemplate(db.Model):
+    """Templates de correo editables desde el panel de administración"""
+    id = db.Column(db.Integer, primary_key=True)
+    template_key = db.Column(db.String(50), unique=True, nullable=False)  # welcome, membership_payment, etc.
+    name = db.Column(db.String(200), nullable=False)  # Nombre descriptivo
+    subject = db.Column(db.String(500), nullable=False)  # Asunto del correo
+    html_content = db.Column(db.Text, nullable=False)  # Contenido HTML
+    text_content = db.Column(db.Text)  # Contenido de texto plano (opcional)
+    category = db.Column(db.String(50))  # membership, event, appointment, system
+    is_custom = db.Column(db.Boolean, default=False)  # Si es personalizado o usa el template por defecto
+    variables = db.Column(db.Text)  # JSON con variables disponibles para este template
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self):
+        """Convertir a diccionario para JSON"""
+        return {
+            'id': self.id,
+            'template_key': self.template_key,
+            'name': self.name,
+            'subject': self.subject,
+            'html_content': self.html_content,
+            'text_content': self.text_content,
+            'category': self.category,
+            'is_custom': self.is_custom,
+            'variables': self.variables,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+    
+    @staticmethod
+    def get_template(template_key):
+        """Obtener template personalizado o None si usa el por defecto"""
+        template = EmailTemplate.query.filter_by(template_key=template_key, is_custom=True).first()
+        return template
+
+
+class NotificationSettings(db.Model):
+    """Configuración de notificaciones del sistema - permite activar/desactivar cada tipo"""
+    id = db.Column(db.Integer, primary_key=True)
+    notification_type = db.Column(db.String(50), unique=True, nullable=False)  # welcome, membership_payment, etc.
+    name = db.Column(db.String(200), nullable=False)  # Nombre descriptivo
+    description = db.Column(db.Text)  # Descripción de qué hace esta notificación
+    enabled = db.Column(db.Boolean, default=True)  # Si está habilitada o no
+    category = db.Column(db.String(50))  # membership, event, appointment, system
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self):
+        """Convertir a diccionario para JSON"""
+        return {
+            'id': self.id,
+            'notification_type': self.notification_type,
+            'name': self.name,
+            'description': self.description,
+            'enabled': self.enabled,
+            'category': self.category,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+    
+    @staticmethod
+    def is_enabled(notification_type):
+        """Verificar si un tipo de notificación está habilitado"""
+        setting = NotificationSettings.query.filter_by(notification_type=notification_type).first()
+        # Si no existe la configuración, por defecto está habilitada (comportamiento actual)
+        return setting.enabled if setting else True
+    
+    @staticmethod
+    def get_all_settings():
+        """Obtener todas las configuraciones agrupadas por categoría"""
+        settings = NotificationSettings.query.order_by(NotificationSettings.category, NotificationSettings.name).all()
+        result = {}
+        for setting in settings:
+            if setting.category not in result:
+                result[setting.category] = []
+            result[setting.category].append(setting.to_dict())
+        return result
 
 
 class EventRegistration(db.Model):
@@ -1276,8 +1435,18 @@ class NotificationEngine:
     """Motor de notificaciones para eventos y movimientos del sistema"""
     
     @staticmethod
+    def _is_notification_enabled(notification_type):
+        """Verificar si una notificación está habilitada en la configuración"""
+        return NotificationSettings.is_enabled(notification_type)
+    
+    @staticmethod
     def notify_event_registration(event, user, registration):
         """Notificar a moderador, administrador y expositor del evento sobre un nuevo registro"""
+        # Verificar si la notificación está habilitada
+        if not NotificationEngine._is_notification_enabled('event_registration'):
+            print(f"⚠️ Notificación 'event_registration' está deshabilitada. No se enviará correo.")
+            return
+        
         try:
             # Obtener todos los responsables del evento
             recipients = event.get_notification_recipients()
@@ -1371,6 +1540,11 @@ class NotificationEngine:
     @staticmethod
     def notify_event_cancellation(event, user, registration):
         """Notificar a moderador, administrador y expositor sobre una cancelación"""
+        # Verificar si la notificación está habilitada
+        if not NotificationEngine._is_notification_enabled('event_cancellation'):
+            print(f"⚠️ Notificación 'event_cancellation' está deshabilitada. No se enviará correo.")
+            return
+        
         try:
             recipients = event.get_notification_recipients()
             
@@ -1454,6 +1628,11 @@ class NotificationEngine:
     @staticmethod
     def notify_event_confirmation(event, user, registration):
         """Notificar a moderador, administrador y expositor cuando se confirma un registro"""
+        # Verificar si la notificación está habilitada
+        if not NotificationEngine._is_notification_enabled('event_confirmation'):
+            print(f"⚠️ Notificación 'event_confirmation' está deshabilitada. No se enviará correo.")
+            return
+        
         try:
             recipients = event.get_notification_recipients()
             
@@ -1537,6 +1716,11 @@ class NotificationEngine:
     @staticmethod
     def notify_event_update(event, changes=None):
         """Notificar cambios en un evento a todos los registrados"""
+        # Verificar si la notificación está habilitada
+        if not NotificationEngine._is_notification_enabled('event_update'):
+            print(f"⚠️ Notificación 'event_update' está deshabilitada. No se enviará correo.")
+            return
+        
         try:
             event_creator = User.query.get(event.created_by) if event.created_by else None
             
@@ -1623,6 +1807,11 @@ class NotificationEngine:
     @staticmethod
     def notify_membership_payment(user, payment, subscription):
         """Notificar confirmación de pago de membresía"""
+        # Verificar si la notificación está habilitada
+        if not NotificationEngine._is_notification_enabled('membership_payment'):
+            print(f"⚠️ Notificación 'membership_payment' está deshabilitada. No se enviará correo a {user.email}")
+            return
+        
         try:
             # Crear notificación
             notification = Notification(
@@ -1662,6 +1851,11 @@ class NotificationEngine:
     @staticmethod
     def notify_membership_expiring(user, subscription, days_left):
         """Notificar que la membresía está por expirar"""
+        # Verificar si la notificación está habilitada
+        if not NotificationEngine._is_notification_enabled('membership_expiring'):
+            print(f"⚠️ Notificación 'membership_expiring' está deshabilitada. No se enviará correo a {user.email}")
+            return
+        
         try:
             notification = Notification(
                 user_id=user.id,
@@ -1694,6 +1888,11 @@ class NotificationEngine:
     @staticmethod
     def notify_membership_expired(user, subscription):
         """Notificar que la membresía ha expirado"""
+        # Verificar si la notificación está habilitada
+        if not NotificationEngine._is_notification_enabled('membership_expired'):
+            print(f"⚠️ Notificación 'membership_expired' está deshabilitada. No se enviará correo a {user.email}")
+            return
+        
         try:
             notification = Notification(
                 user_id=user.id,
@@ -1726,6 +1925,11 @@ class NotificationEngine:
     @staticmethod
     def notify_membership_renewed(user, subscription):
         """Notificar renovación de membresía"""
+        # Verificar si la notificación está habilitada
+        if not NotificationEngine._is_notification_enabled('membership_renewed'):
+            print(f"⚠️ Notificación 'membership_renewed' está deshabilitada. No se enviará correo a {user.email}")
+            return
+        
         try:
             notification = Notification(
                 user_id=user.id,
@@ -1758,6 +1962,11 @@ class NotificationEngine:
     @staticmethod
     def notify_appointment_confirmation(appointment, user, advisor):
         """Notificar confirmación de cita"""
+        # Verificar si la notificación está habilitada
+        if not NotificationEngine._is_notification_enabled('appointment_confirmation'):
+            print(f"⚠️ Notificación 'appointment_confirmation' está deshabilitada. No se enviará correo a {user.email}")
+            return
+        
         try:
             notification = Notification(
                 user_id=user.id,
@@ -1790,6 +1999,11 @@ class NotificationEngine:
     @staticmethod
     def notify_appointment_reminder(appointment, user, advisor, hours_before=24):
         """Notificar recordatorio de cita"""
+        # Verificar si la notificación está habilitada
+        if not NotificationEngine._is_notification_enabled('appointment_reminder'):
+            print(f"⚠️ Notificación 'appointment_reminder' está deshabilitada. No se enviará correo a {user.email}")
+            return
+        
         try:
             notification = Notification(
                 user_id=user.id,
@@ -1822,6 +2036,11 @@ class NotificationEngine:
     @staticmethod
     def notify_welcome(user):
         """Notificar bienvenida a nuevo usuario"""
+        # Verificar si la notificación está habilitada
+        if not NotificationEngine._is_notification_enabled('welcome'):
+            print(f"⚠️ Notificación 'welcome' está deshabilitada. No se enviará correo a {user.email}")
+            return
+        
         try:
             notification = Notification(
                 user_id=user.id,
@@ -1854,6 +2073,11 @@ class NotificationEngine:
     @staticmethod
     def notify_event_registration_to_user(event, user, registration):
         """Notificar al usuario sobre su registro a evento"""
+        # Verificar si la notificación está habilitada
+        if not NotificationEngine._is_notification_enabled('event_registration_user'):
+            print(f"⚠️ Notificación 'event_registration_user' está deshabilitada. No se enviará correo a {user.email}")
+            return
+        
         try:
             notification = Notification(
                 user_id=user.id,
@@ -1887,6 +2111,11 @@ class NotificationEngine:
     @staticmethod
     def notify_event_cancellation_to_user(event, user):
         """Notificar al usuario sobre cancelación de registro"""
+        # Verificar si la notificación está habilitada
+        if not NotificationEngine._is_notification_enabled('event_cancellation_user'):
+            print(f"⚠️ Notificación 'event_cancellation_user' está deshabilitada. No se enviará correo a {user.email}")
+            return
+        
         try:
             notification = Notification(
                 user_id=user.id,
@@ -2050,9 +2279,85 @@ def admin_dashboard():
 @app.route('/admin/users')
 @admin_required
 def admin_users():
-    """Gestión de usuarios"""
-    users = User.query.order_by(User.created_at.desc()).all()
-    return render_template('admin/users.html', users=users)
+    """Gestión de usuarios con filtros"""
+    # Obtener parámetros de filtro
+    search = request.args.get('search', '').strip()
+    status_filter = request.args.get('status', 'all')
+    admin_filter = request.args.get('admin', 'all')
+    advisor_filter = request.args.get('advisor', 'all')
+    group_filter = request.args.get('group', 'all')
+    tag_filter = request.args.get('tag', '').strip()
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 50, type=int)
+    
+    # Construir query base
+    query = User.query
+    
+    # Filtro de búsqueda (nombre, email, teléfono)
+    if search:
+        query = query.filter(
+            db.or_(
+                User.first_name.ilike(f'%{search}%'),
+                User.last_name.ilike(f'%{search}%'),
+                User.email.ilike(f'%{search}%'),
+                User.phone.ilike(f'%{search}%')
+            )
+        )
+    
+    # Filtro de estado
+    if status_filter == 'active':
+        query = query.filter_by(is_active=True)
+    elif status_filter == 'inactive':
+        query = query.filter_by(is_active=False)
+    
+    # Filtro de admin
+    if admin_filter == 'yes':
+        query = query.filter_by(is_admin=True)
+    elif admin_filter == 'no':
+        query = query.filter_by(is_admin=False)
+    
+    # Filtro de asesor
+    if advisor_filter == 'yes':
+        query = query.filter_by(is_advisor=True)
+    elif advisor_filter == 'no':
+        query = query.filter_by(is_advisor=False)
+    
+    # Filtro de grupo
+    if group_filter != 'all' and group_filter:
+        query = query.filter_by(user_group=group_filter)
+    
+    # Filtro de etiqueta
+    if tag_filter:
+        query = query.filter(User.tags.ilike(f'%{tag_filter}%'))
+    
+    # Ordenar y paginar
+    query = query.order_by(User.created_at.desc())
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    users = pagination.items
+    
+    # Obtener grupos únicos para el filtro
+    groups = db.session.query(User.user_group).distinct().filter(User.user_group.isnot(None)).all()
+    groups = [g[0] for g in groups if g[0]]
+    
+    # Obtener etiquetas únicas para el filtro (extraer de todos los tags)
+    all_tags = db.session.query(User.tags).filter(User.tags.isnot(None)).all()
+    unique_tags = set()
+    for tag_str in all_tags:
+        if tag_str[0]:
+            unique_tags.update([t.strip() for t in tag_str[0].split(',') if t.strip()])
+    unique_tags = sorted(list(unique_tags))
+    
+    return render_template('admin/users.html', 
+                         users=users,
+                         pagination=pagination,
+                         search=search,
+                         status_filter=status_filter,
+                         admin_filter=admin_filter,
+                         advisor_filter=advisor_filter,
+                         group_filter=group_filter,
+                         tag_filter=tag_filter,
+                         groups=groups,
+                         unique_tags=unique_tags)
 
 
 @app.route('/admin/users/<int:user_id>/update', methods=['POST'])
@@ -2069,6 +2374,28 @@ def admin_update_user(user_id):
     if last_name:
         user.last_name = last_name
     user.phone = phone or None
+    
+    # Actualizar tags y grupo
+    user.tags = request.form.get('tags', '').strip() or None
+    user.user_group = request.form.get('user_group', '').strip() or None
+    
+    # Actualizar email si cambió
+    new_email = request.form.get('email', '').strip()
+    if new_email and new_email != user.email:
+        # Verificar que el nuevo email no esté en uso
+        if User.query.filter_by(email=new_email).first():
+            flash('El email ya está en uso por otro usuario.', 'error')
+            return redirect(url_for('admin_users'))
+        user.email = new_email
+    
+    # Actualizar contraseña si se proporcionó
+    new_password = request.form.get('password', '').strip()
+    if new_password:
+        if len(new_password) < 6:
+            flash('La contraseña debe tener al menos 6 caracteres.', 'error')
+            return redirect(url_for('admin_users'))
+        from werkzeug.security import generate_password_hash
+        user.password_hash = generate_password_hash(new_password)
 
     user.is_active = bool(request.form.get('is_active'))
     user.is_admin = bool(request.form.get('is_admin'))
@@ -2091,6 +2418,100 @@ def admin_update_user(user_id):
 
     db.session.commit()
     flash('Usuario actualizado correctamente.', 'success')
+    return redirect(url_for('admin_users'))
+
+@app.route('/admin/users/create', methods=['POST'])
+@admin_required
+def admin_create_user():
+    """Crear un nuevo usuario"""
+    try:
+        first_name = request.form.get('first_name', '').strip()
+        last_name = request.form.get('last_name', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
+        phone = request.form.get('phone', '').strip()
+        is_active = bool(request.form.get('is_active'))
+        is_admin = bool(request.form.get('is_admin'))
+        is_advisor = bool(request.form.get('is_advisor'))
+        tags = request.form.get('tags', '').strip() or None
+        user_group = request.form.get('user_group', '').strip() or None
+        
+        # Validaciones
+        if not first_name or not last_name or not email or not password:
+            flash('Todos los campos obligatorios deben ser completados.', 'error')
+            return redirect(url_for('admin_users'))
+        
+        if len(password) < 6:
+            flash('La contraseña debe tener al menos 6 caracteres.', 'error')
+            return redirect(url_for('admin_users'))
+        
+        # Verificar si el email ya existe
+        if User.query.filter_by(email=email).first():
+            flash('El email ya está registrado.', 'error')
+            return redirect(url_for('admin_users'))
+        
+        # Crear usuario
+        from werkzeug.security import generate_password_hash
+        new_user = User(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            password_hash=generate_password_hash(password),
+            phone=phone or None,
+            tags=tags,
+            user_group=user_group,
+            is_active=is_active,
+            is_admin=is_admin,
+            is_advisor=is_advisor
+        )
+        db.session.add(new_user)
+        db.session.commit()
+        
+        # Si es asesor, crear perfil
+        if is_advisor:
+            new_profile = Advisor(
+                user_id=new_user.id,
+                headline='Asesor RELATIC',
+                specializations='',
+                meeting_url=''
+            )
+            db.session.add(new_profile)
+            db.session.commit()
+        
+        flash(f'Usuario {first_name} {last_name} creado correctamente.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al crear usuario: {str(e)}', 'error')
+    
+    return redirect(url_for('admin_users'))
+
+@app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+@admin_required
+def admin_delete_user(user_id):
+    """Eliminar un usuario"""
+    user = User.query.get_or_404(user_id)
+    
+    # No permitir eliminar al usuario actual
+    if user.id == current_user.id:
+        flash('No puedes eliminar tu propio usuario.', 'error')
+        return redirect(url_for('admin_users'))
+    
+    try:
+        user_name = f"{user.first_name} {user.last_name}"
+        
+        # Eliminar perfil de asesor si existe
+        if user.advisor_profile:
+            db.session.delete(user.advisor_profile)
+        
+        # Eliminar usuario
+        db.session.delete(user)
+        db.session.commit()
+        
+        flash(f'Usuario {user_name} eliminado correctamente.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error al eliminar usuario: {str(e)}', 'error')
+    
     return redirect(url_for('admin_users'))
 
 @app.route('/admin/memberships')
@@ -2256,6 +2677,279 @@ def api_messaging_stats():
         'by_type': {t[0]: t[1] for t in stats_by_type},
         'by_day': [{'date': str(d[0]), 'count': d[1]} for d in stats_by_day]
     })
+
+# Rutas de administración para configuración de notificaciones
+@app.route('/admin/notifications')
+@admin_required
+def admin_notifications():
+    """Panel de configuración de notificaciones"""
+    settings = NotificationSettings.get_all_settings()
+    return render_template('admin/notifications.html', settings=settings)
+
+@app.route('/api/admin/notifications')
+@admin_required
+def api_notifications_list():
+    """API para obtener todas las configuraciones de notificaciones"""
+    settings = NotificationSettings.query.order_by(NotificationSettings.category, NotificationSettings.name).all()
+    return jsonify({
+        'settings': [s.to_dict() for s in settings]
+    })
+
+@app.route('/api/admin/notifications/<int:setting_id>', methods=['PUT'])
+@admin_required
+def api_notification_update(setting_id):
+    """API para actualizar una configuración de notificación"""
+    setting = NotificationSettings.query.get_or_404(setting_id)
+    
+    data = request.get_json()
+    if 'enabled' in data:
+        setting.enabled = bool(data['enabled'])
+        setting.updated_at = datetime.utcnow()
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': f'Notificación "{setting.name}" {"habilitada" if setting.enabled else "deshabilitada"}',
+            'setting': setting.to_dict()
+        })
+    
+    return jsonify({'success': False, 'error': 'Datos inválidos'}), 400
+
+@app.route('/api/admin/notifications/bulk-update', methods=['POST'])
+@admin_required
+def api_notifications_bulk_update():
+    """API para actualizar múltiples configuraciones a la vez"""
+    data = request.get_json()
+    updates = data.get('updates', [])
+    
+    updated_count = 0
+    for update in updates:
+        setting_id = update.get('id')
+        enabled = update.get('enabled')
+        
+        if setting_id and enabled is not None:
+            setting = NotificationSettings.query.get(setting_id)
+            if setting:
+                setting.enabled = bool(enabled)
+                setting.updated_at = datetime.utcnow()
+                updated_count += 1
+    
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': f'{updated_count} configuración(es) actualizada(s)',
+        'updated': updated_count
+    })
+
+# Rutas de administración para configuración de email
+@app.route('/admin/email')
+@admin_required
+def admin_email():
+    """Panel de configuración de email (SMTP y templates)"""
+    email_config = EmailConfig.get_active_config()
+    templates = EmailTemplate.query.order_by(EmailTemplate.category, EmailTemplate.name).all()
+    
+    # Agrupar templates por categoría
+    templates_by_category = {}
+    for template in templates:
+        if template.category not in templates_by_category:
+            templates_by_category[template.category] = []
+        templates_by_category[template.category].append(template.to_dict())
+    
+    return render_template('admin/email.html', 
+                         email_config=email_config.to_dict() if email_config else None,
+                         templates=templates_by_category)
+
+@app.route('/api/admin/email/config', methods=['GET', 'POST', 'PUT'])
+@admin_required
+def api_email_config():
+    """API para obtener y actualizar configuración SMTP"""
+    if request.method == 'GET':
+        config = EmailConfig.get_active_config()
+        if config:
+            return jsonify({'success': True, 'config': config.to_dict()})
+        else:
+            return jsonify({'success': False, 'message': 'No hay configuración activa'})
+    
+    elif request.method in ['POST', 'PUT']:
+        data = request.get_json()
+        
+        # Desactivar todas las configuraciones anteriores
+        EmailConfig.query.update({'is_active': False})
+        
+        # Buscar si existe una configuración
+        config = EmailConfig.query.first()
+        
+        if not config:
+            # Crear nueva configuración
+            config = EmailConfig(
+                mail_server=data.get('mail_server', 'smtp.gmail.com'),
+                mail_port=int(data.get('mail_port', 587)),
+                mail_use_tls=bool(data.get('mail_use_tls', True)),
+                mail_use_ssl=bool(data.get('mail_use_ssl', False)),
+                mail_username=data.get('mail_username', ''),
+                mail_password=data.get('mail_password', ''),
+                mail_default_sender=data.get('mail_default_sender', 'noreply@relaticpanama.org'),
+                use_environment_variables=bool(data.get('use_environment_variables', True)),
+                is_active=True
+            )
+            db.session.add(config)
+        else:
+            # Actualizar configuración existente
+            config.mail_server = data.get('mail_server', config.mail_server)
+            config.mail_port = int(data.get('mail_port', config.mail_port))
+            config.mail_use_tls = bool(data.get('mail_use_tls', config.mail_use_tls))
+            config.mail_use_ssl = bool(data.get('mail_use_ssl', config.mail_use_ssl))
+            config.mail_username = data.get('mail_username', config.mail_username)
+            if 'mail_password' in data and data['mail_password']:
+                config.mail_password = data.get('mail_password')
+            config.mail_default_sender = data.get('mail_default_sender', config.mail_default_sender)
+            config.use_environment_variables = bool(data.get('use_environment_variables', config.use_environment_variables))
+            config.is_active = True
+            config.updated_at = datetime.utcnow()
+        
+        try:
+            db.session.commit()
+            
+            # Aplicar nueva configuración
+            config.apply_to_app(app)
+            global mail
+            mail = Mail(app)
+            if EMAIL_TEMPLATES_AVAILABLE:
+                global email_service
+                email_service = EmailService(mail)
+            
+            return jsonify({
+                'success': True,
+                'message': 'Configuración de email actualizada exitosamente',
+                'config': config.to_dict()
+            })
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
+
+@app.route('/api/admin/email/test', methods=['POST'])
+@admin_required
+def api_email_test():
+    """API para probar la configuración de email enviando un correo de prueba"""
+    data = request.get_json()
+    test_email = data.get('email', current_user.email)
+    
+    try:
+        # Crear mensaje de prueba
+        from flask_mail import Message
+        msg = Message(
+            subject='[Prueba] Configuración de Email - RelaticPanama',
+            recipients=[test_email],
+            html=f"""
+            <h2>Correo de Prueba</h2>
+            <p>Este es un correo de prueba para verificar que la configuración SMTP está funcionando correctamente.</p>
+            <p>Si recibes este correo, significa que la configuración es correcta.</p>
+            <p><strong>Fecha:</strong> {datetime.utcnow().strftime('%d/%m/%Y %H:%M:%S')}</p>
+            <p>Saludos,<br>Equipo RelaticPanama</p>
+            """
+        )
+        mail.send(msg)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Correo de prueba enviado exitosamente a {test_email}'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Error al enviar correo de prueba: {str(e)}'
+        }), 500
+
+@app.route('/api/admin/email/templates')
+@admin_required
+def api_email_templates():
+    """API para obtener todos los templates de correo"""
+    templates = EmailTemplate.query.order_by(EmailTemplate.category, EmailTemplate.name).all()
+    return jsonify({
+        'success': True,
+        'templates': [t.to_dict() for t in templates]
+    })
+
+@app.route('/api/admin/email/templates/<int:template_id>', methods=['GET', 'PUT'])
+@admin_required
+def api_email_template(template_id):
+    """API para obtener y actualizar un template de correo"""
+    template = EmailTemplate.query.get_or_404(template_id)
+    
+    if request.method == 'GET':
+        return jsonify({'success': True, 'template': template.to_dict()})
+    
+    elif request.method == 'PUT':
+        data = request.get_json()
+        
+        template.subject = data.get('subject', template.subject)
+        template.html_content = data.get('html_content', template.html_content)
+        template.text_content = data.get('text_content', template.text_content)
+        template.is_custom = bool(data.get('is_custom', template.is_custom))
+        template.updated_at = datetime.utcnow()
+        
+        try:
+            db.session.commit()
+            return jsonify({
+                'success': True,
+                'message': f'Template "{template.name}" actualizado exitosamente',
+                'template': template.to_dict()
+            })
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
+
+@app.route('/api/admin/email/templates/<int:template_id>/reset', methods=['POST'])
+@admin_required
+def api_email_template_reset(template_id):
+    """API para resetear un template a su versión por defecto"""
+    template = EmailTemplate.query.get_or_404(template_id)
+    
+    # Cargar template por defecto desde email_templates.py
+    try:
+        if EMAIL_TEMPLATES_AVAILABLE:
+            # Importar función de template
+            template_func_map = {
+                'welcome': get_welcome_email,
+                'membership_payment': get_membership_payment_confirmation_email,
+                'membership_expiring': get_membership_expiring_email,
+                'membership_expired': get_membership_expired_email,
+                'membership_renewed': get_membership_renewed_email,
+                'event_registration': get_event_registration_email,
+                'event_cancellation': get_event_cancellation_email,
+                'event_update': get_event_update_email,
+                'appointment_confirmation': get_appointment_confirmation_email,
+                'appointment_reminder': get_appointment_reminder_email,
+            }
+            
+            if template.template_key in template_func_map:
+                # Nota: Esto requiere pasar objetos mock, por ahora solo marcamos como no custom
+                template.is_custom = False
+                template.updated_at = datetime.utcnow()
+                db.session.commit()
+                
+                return jsonify({
+                    'success': True,
+                    'message': f'Template "{template.name}" reseteado a versión por defecto'
+                })
+        
+        return jsonify({
+            'success': False,
+            'error': 'No se pudo resetear el template'
+        }), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 # Registrar blueprints de eventos
 try:
@@ -2448,5 +3142,7 @@ if __name__ == '__main__':
         db.create_all()
         ensure_email_log_columns()  # Asegurar columnas antes de crear datos de muestra
         create_sample_data()
+        # Aplicar configuración de email desde BD después de crear tablas
+        apply_email_config_from_db()
     
     app.run(host='0.0.0.0', port=9000, debug=True)

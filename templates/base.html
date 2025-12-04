@@ -111,10 +111,10 @@
                         </a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-user"></i> {{ current_user.first_name }}
                         </a>
-                        <ul class="dropdown-menu">
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                             <li><a class="dropdown-item" href="{{ url_for('profile') }}">Perfil</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('membership') }}">Membresía</a></li>
                             <li><hr class="dropdown-divider"></li>
@@ -182,7 +182,7 @@
                     <ul class="nav navbar-nav">
                         <!-- Getting Started -->
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+                            <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Dashboard">
                                 <i class="menu-icon fa fa-tachometer-alt"></i>
                                 <span class="menu-title-text">Dashboard</span>
                             </a>
@@ -190,39 +190,45 @@
                         
                         <!-- Miembros - Sección Expandible -->
                         <li class="nav-item nav-group {% if request.endpoint in ['benefits', 'services', 'office365', 'membership'] or request.blueprint in ['events', 'appointments'] %}show{% endif %}">
-                            <a class="nav-link nav-group-toggle" href="#" onclick="return false;">
+                            <a class="nav-link nav-group-toggle" href="#" onclick="return false;" data-bs-toggle="tooltip" data-bs-placement="right" title="Miembros">
                                 <i class="menu-icon fa fa-users"></i>
                                 <span class="menu-title-text">Miembros</span>
                                 <i class="menu-arrow fa fa-chevron-down"></i>
                             </a>
                             <ul class="nav-group-items">
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.endpoint == 'benefits' %}active{% endif %}" href="{{ url_for('benefits') }}">
+                                    <a class="nav-link {% if request.endpoint == 'benefits' %}active{% endif %}" href="{{ url_for('benefits') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Beneficios">
+                                        <i class="menu-icon fa fa-gift"></i>
                                         <span class="menu-title-text">Beneficios</span>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.endpoint == 'services' %}active{% endif %}" href="{{ url_for('services') }}">
+                                    <a class="nav-link {% if request.endpoint == 'services' %}active{% endif %}" href="{{ url_for('services') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Servicios">
+                                        <i class="menu-icon fa fa-concierge-bell"></i>
                                         <span class="menu-title-text">Servicios</span>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.endpoint == 'office365' %}active{% endif %}" href="{{ url_for('office365') }}">
+                                    <a class="nav-link {% if request.endpoint == 'office365' %}active{% endif %}" href="{{ url_for('office365') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Office 365">
+                                        <i class="menu-icon fa fa-microsoft"></i>
                                         <span class="menu-title-text">Office 365</span>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.endpoint == 'membership' %}active{% endif %}" href="{{ url_for('membership') }}">
+                                    <a class="nav-link {% if request.endpoint == 'membership' %}active{% endif %}" href="{{ url_for('membership') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Membresía">
+                                        <i class="menu-icon fa fa-crown"></i>
                                         <span class="menu-title-text">Membresía</span>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.blueprint == 'events' %}active{% endif %}" href="{{ url_for('events.list_events') }}">
+                                    <a class="nav-link {% if request.blueprint == 'events' %}active{% endif %}" href="{{ url_for('events.list_events') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Eventos">
+                                        <i class="menu-icon fa fa-calendar"></i>
                                         <span class="menu-title-text">Eventos</span>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.blueprint == 'appointments' %}active{% endif %}" href="{{ url_for('appointments.appointments_home') }}">
+                                    <a class="nav-link {% if request.blueprint == 'appointments' %}active{% endif %}" href="{{ url_for('appointments.appointments_home') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Citas">
+                                        <i class="menu-icon fa fa-clock"></i>
                                         <span class="menu-title-text">Citas</span>
                                     </a>
                                 </li>
@@ -231,46 +237,65 @@
                         
                         {% if current_user.is_admin %}
                         <!-- Administración - Sección Expandible -->
-                        <li class="nav-item nav-group {% if request.endpoint in ['admin_dashboard', 'admin_users', 'admin_memberships', 'admin_messaging', 'admin_messaging_detail'] or request.blueprint == 'admin_events' or request.endpoint == 'admin_events.discounts_index' or request.blueprint == 'admin_appointments' %}show{% endif %}">
-                            <a class="nav-link nav-group-toggle" href="#" onclick="return false;">
+                        <li class="nav-item nav-group {% if request.endpoint in ['admin_dashboard', 'admin_users', 'admin_memberships', 'admin_messaging', 'admin_messaging_detail', 'admin_email', 'admin_notifications'] or request.blueprint == 'admin_events' or request.endpoint == 'admin_events.discounts_index' or request.blueprint == 'admin_appointments' %}show{% endif %}">
+                            <a class="nav-link nav-group-toggle" href="#" onclick="return false;" data-bs-toggle="tooltip" data-bs-placement="right" title="Administración">
                                 <i class="menu-icon fa fa-cog"></i>
                                 <span class="menu-title-text">Administración</span>
                                 <i class="menu-arrow fa fa-chevron-down"></i>
                             </a>
                             <ul class="nav-group-items">
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}" href="{{ url_for('admin_dashboard') }}">
+                                    <a class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}" href="{{ url_for('admin_dashboard') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Panel Admin">
+                                        <i class="menu-icon fa fa-tachometer-alt"></i>
                                         <span class="menu-title-text">Panel Admin</span>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.endpoint == 'admin_users' %}active{% endif %}" href="{{ url_for('admin_users') }}">
+                                    <a class="nav-link {% if request.endpoint == 'admin_users' %}active{% endif %}" href="{{ url_for('admin_users') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Usuarios">
+                                        <i class="menu-icon fa fa-users"></i>
                                         <span class="menu-title-text">Usuarios</span>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.endpoint == 'admin_memberships' %}active{% endif %}" href="{{ url_for('admin_memberships') }}">
+                                    <a class="nav-link {% if request.endpoint == 'admin_memberships' %}active{% endif %}" href="{{ url_for('admin_memberships') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Membresías">
+                                        <i class="menu-icon fa fa-crown"></i>
                                         <span class="menu-title-text">Membresías</span>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.blueprint == 'admin_events' and request.endpoint != 'admin_events.discounts_index' %}active{% endif %}" href="{{ url_for('admin_events.admin_events_index') }}">
+                                    <a class="nav-link {% if request.blueprint == 'admin_events' and request.endpoint != 'admin_events.discounts_index' %}active{% endif %}" href="{{ url_for('admin_events.admin_events_index') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Gestión de Eventos">
+                                        <i class="menu-icon fa fa-calendar"></i>
                                         <span class="menu-title-text">Gestión de Eventos</span>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.endpoint == 'admin_events.discounts_index' %}active{% endif %}" href="{{ url_for('admin_events.discounts_index') }}">
+                                    <a class="nav-link {% if request.endpoint == 'admin_events.discounts_index' %}active{% endif %}" href="{{ url_for('admin_events.discounts_index') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Descuentos">
+                                        <i class="menu-icon fa fa-tag"></i>
                                         <span class="menu-title-text">Descuentos</span>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.blueprint == 'admin_appointments' %}active{% endif %}" href="{{ url_for('admin_appointments.admin_appointments_dashboard') }}">
+                                    <a class="nav-link {% if request.blueprint == 'admin_appointments' %}active{% endif %}" href="{{ url_for('admin_appointments.admin_appointments_dashboard') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Gestión de Citas">
+                                        <i class="menu-icon fa fa-clock"></i>
                                         <span class="menu-title-text">Gestión de Citas</span>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link {% if request.endpoint == 'admin_messaging' or request.endpoint == 'admin_messaging_detail' %}active{% endif %}" href="{{ url_for('admin_messaging') }}">
-                                        <span class="menu-title-text">Mensajería</span>
+                                    <a class="nav-link {% if request.endpoint == 'admin_email' or request.endpoint == 'admin_messaging' or request.endpoint == 'admin_messaging_detail' or request.endpoint == 'admin_notifications' %}active{% endif %}" href="{{ url_for('admin_email') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Configuración de Email">
+                                        <i class="menu-icon fa fa-envelope"></i>
+                                        <span class="menu-title-text">Configuración de Email</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.endpoint == 'admin_messaging' or request.endpoint == 'admin_messaging_detail' %}active{% endif %}" href="{{ url_for('admin_messaging') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Historial de Emails">
+                                        <i class="menu-icon fa fa-list"></i>
+                                        <span class="menu-title-text">Historial de Emails</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.endpoint == 'admin_notifications' %}active{% endif %}" href="{{ url_for('admin_notifications') }}" data-bs-toggle="tooltip" data-bs-placement="right" title="Notificaciones">
+                                        <i class="menu-icon fa fa-bell"></i>
+                                        <span class="menu-title-text">Notificaciones</span>
                                     </a>
                                 </li>
                             </ul>
@@ -508,6 +533,34 @@
                     });
                 }
             }
+            
+            // Inicializar tooltips de Bootstrap
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl, {
+                    trigger: 'hover',
+                    delay: { show: 300, hide: 100 }
+                });
+            });
+            
+            // Actualizar tooltips cuando el sidebar se colapsa/expande
+            function updateTooltips() {
+                const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+                tooltipList.forEach(function(tooltip) {
+                    if (isCollapsed) {
+                        tooltip.enable();
+                    } else {
+                        tooltip.disable();
+                    }
+                });
+            }
+            
+            // Observar cambios en el sidebar
+            const observer = new MutationObserver(updateTooltips);
+            observer.observe(document.body, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
             
             // Manejo de grupos expandibles - Estilo CoreUI
             const navGroups = document.querySelectorAll('.nav-group');

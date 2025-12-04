@@ -6,31 +6,125 @@
 <div class="container py-4">
     <div class="row mb-4">
         <div class="col-12">
-            <h1 class="display-6 mb-3">
-                <i class="fas fa-users"></i> Gestión de Usuarios
-            </h1>
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="display-6 mb-3">
+                    <i class="fas fa-users"></i> Gestión de Usuarios
+                </h1>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
+                    <i class="fas fa-plus"></i> Crear Usuario
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-filter"></i> Filtros de Búsqueda</h6>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('admin_users') }}" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="search" class="form-label">Buscar</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   placeholder="Nombre, email, teléfono..." value="{{ search }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="status" class="form-label">Estado</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>Todos</option>
+                                <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Activos</option>
+                                <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactivos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="admin" class="form-label">Admin</label>
+                            <select class="form-select" id="admin" name="admin">
+                                <option value="all" {% if admin_filter == 'all' %}selected{% endif %}>Todos</option>
+                                <option value="yes" {% if admin_filter == 'yes' %}selected{% endif %}>Sí</option>
+                                <option value="no" {% if admin_filter == 'no' %}selected{% endif %}>No</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="advisor" class="form-label">Asesor</label>
+                            <select class="form-select" id="advisor" name="advisor">
+                                <option value="all" {% if advisor_filter == 'all' %}selected{% endif %}>Todos</option>
+                                <option value="yes" {% if advisor_filter == 'yes' %}selected{% endif %}>Sí</option>
+                                <option value="no" {% if advisor_filter == 'no' %}selected{% endif %}>No</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="group" class="form-label">Grupo</label>
+                            <select class="form-select" id="group" name="group">
+                                <option value="all" {% if group_filter == 'all' %}selected{% endif %}>Todos</option>
+                                {% for group in groups %}
+                                <option value="{{ group }}" {% if group_filter == group %}selected{% endif %}>{{ group }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <label for="per_page" class="form-label">Por página</label>
+                            <select class="form-select" id="per_page" name="per_page" onchange="this.form.submit()">
+                                <option value="25" {% if request.args.get('per_page', '50') == '25' %}selected{% endif %}>25</option>
+                                <option value="50" {% if request.args.get('per_page', '50') == '50' %}selected{% endif %}>50</option>
+                                <option value="100" {% if request.args.get('per_page', '50') == '100' %}selected{% endif %}>100</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label for="tag" class="form-label">Etiqueta</label>
+                            <input type="text" class="form-control" id="tag" name="tag" 
+                                   placeholder="Buscar por etiqueta..." value="{{ tag_filter }}"
+                                   list="tag-list">
+                            <datalist id="tag-list">
+                                {% for tag in unique_tags %}
+                                <option value="{{ tag }}">
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                        <div class="col-md-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Filtrar
+                            </button>
+                            <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Limpiar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="row">
         <div class="col-12">
-            <div class="card">
+            <div class="card shadow-sm">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-list"></i> Lista de Usuarios</h5>
-                    <span class="badge bg-primary">{{ users|length }} usuarios</span>
+                    <span class="badge bg-primary">
+                        {% if pagination %}
+                            {{ pagination.total }} usuarios
+                        {% else %}
+                            {{ users|length }} usuarios
+                        {% endif %}
+                    </span>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-hover">
-                            <thead>
+                            <thead class="table-light">
                                 <tr>
                                     <th>ID</th>
                                     <th>Nombre</th>
                                     <th>Email</th>
                                     <th>Teléfono</th>
+                                    <th>Grupo</th>
+                                    <th>Etiquetas</th>
                                     <th>Fecha Registro</th>
                                     <th>Estado</th>
                                     <th>Admin</th>
+                                    <th>Asesor</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
@@ -41,6 +135,22 @@
                                     <td>{{ user.first_name }} {{ user.last_name }}</td>
                                     <td>{{ user.email }}</td>
                                     <td>{{ user.phone or 'N/A' }}</td>
+                                    <td>
+                                        {% if user.user_group %}
+                                            <span class="badge bg-info">{{ user.user_group }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user.tags %}
+                                            {% for tag in user.tags.split(',') %}
+                                                <span class="badge bg-secondary me-1">{{ tag.strip() }}</span>
+                                            {% endfor %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
                                     <td>{{ user.created_at.strftime('%d/%m/%Y') }}</td>
                                     <td>
                                         <span class="badge bg-{{ 'success' if user.is_active else 'danger' }}">
@@ -53,21 +163,278 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-primary" onclick="alert('Funcionalidad pendiente')">
+                                        <span class="badge bg-{{ 'info' if user.is_advisor else 'secondary' }}">
+                                            {{ 'Sí' if user.is_advisor else 'No' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary" 
+                                                onclick="editUser({{ user.id }}, '{{ user.first_name }}', '{{ user.last_name }}', '{{ user.email }}', '{{ user.phone or '' }}', {{ 'true' if user.is_active else 'false' }}, {{ 'true' if user.is_admin else 'false' }}, {{ 'true' if user.is_advisor else 'false' }}, '{{ user.user_group or '' }}', '{{ user.tags or '' }}')"
+                                                data-bs-toggle="tooltip" 
+                                                data-bs-placement="top" 
+                                                title="Editar usuario">
                                             <i class="fas fa-edit"></i>
                                         </button>
+                                        {% if user.id != current_user.id %}
+                                        <button class="btn btn-sm btn-danger" 
+                                                onclick="deleteUser({{ user.id }}, '{{ user.first_name }} {{ user.last_name }}')"
+                                                data-bs-toggle="tooltip" 
+                                                data-bs-placement="top" 
+                                                title="Eliminar usuario">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        {% endif %}
                                     </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
+                    
+                    <!-- Paginación -->
+                    {% if pagination and pagination.pages > 1 %}
+                    <nav aria-label="Paginación">
+                        <ul class="pagination justify-content-center mt-3">
+                            {% if pagination.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin_users', page=pagination.prev_num, search=search, status=status_filter, admin=admin_filter, advisor=advisor_filter, group=group_filter, tag=tag_filter, per_page=request.args.get('per_page', 50)) }}">Anterior</a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                                {% if page_num %}
+                                    {% if page_num == pagination.page %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin_users', page=page_num, search=search, status=status_filter, admin=admin_filter, advisor=advisor_filter, group=group_filter, tag=tag_filter, per_page=request.args.get('per_page', 50)) }}">{{ page_num }}</a>
+                                    </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if pagination.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin_users', page=pagination.next_num, search=search, status=status_filter, admin=admin_filter, advisor=advisor_filter, group=group_filter, tag=tag_filter, per_page=request.args.get('per_page', 50)) }}">Siguiente</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Modal para crear usuario -->
+<div class="modal fade" id="createUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Crear Nuevo Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin_create_user') }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="create_first_name" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="create_first_name" name="first_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="create_last_name" class="form-label">Apellido</label>
+                            <input type="text" class="form-control" id="create_last_name" name="last_name" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="create_email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="create_email" name="email" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="create_phone" class="form-label">Teléfono (Opcional)</label>
+                            <input type="text" class="form-control" id="create_phone" name="phone">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="create_password" class="form-label">Contraseña</label>
+                            <input type="password" class="form-control" id="create_password" name="password" required minlength="6">
+                            <small class="form-text text-muted">Mínimo 6 caracteres</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="create_user_group" class="form-label">Grupo</label>
+                            <input type="text" class="form-control" id="create_user_group" name="user_group" 
+                                   placeholder="Ej: Investigadores, Estudiantes, Profesores..."
+                                   list="group-list">
+                            <datalist id="group-list">
+                                {% for group in groups %}
+                                <option value="{{ group }}">
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="create_tags" class="form-label">Etiquetas</label>
+                        <input type="text" class="form-control" id="create_tags" name="tags" 
+                               placeholder="Separadas por comas: investigacion, cualitativa, metodologia">
+                        <small class="form-text text-muted">Separa las etiquetas con comas</small>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="create_is_active" name="is_active" checked>
+                                <label class="form-check-label" for="create_is_active">Usuario Activo</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="create_is_admin" name="is_admin">
+                                <label class="form-check-label" for="create_is_admin">Es Administrador</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="create_is_advisor" name="is_advisor">
+                                <label class="form-check-label" for="create_is_advisor">Es Asesor</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Crear Usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para editar usuario -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editUserForm" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" id="edit_user_id" name="user_id">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_first_name" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="edit_first_name" name="first_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_last_name" class="form-label">Apellido</label>
+                            <input type="text" class="form-control" id="edit_last_name" name="last_name" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="edit_email" name="email" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_phone" class="form-label">Teléfono</label>
+                            <input type="text" class="form-control" id="edit_phone" name="phone">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_user_group" class="form-label">Grupo</label>
+                            <input type="text" class="form-control" id="edit_user_group" name="user_group" 
+                                   placeholder="Ej: Investigadores, Estudiantes..."
+                                   list="edit-group-list">
+                            <datalist id="edit-group-list">
+                                {% for group in groups %}
+                                <option value="{{ group }}">
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_password" class="form-label">Nueva Contraseña (Opcional)</label>
+                            <input type="password" class="form-control" id="edit_password" name="password" minlength="6">
+                            <small class="form-text text-muted">Dejar vacío para no cambiar</small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_tags" class="form-label">Etiquetas</label>
+                        <input type="text" class="form-control" id="edit_tags" name="tags" 
+                               placeholder="Separadas por comas">
+                        <small class="form-text text-muted">Separa las etiquetas con comas</small>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
+                                <label class="form-check-label" for="edit_is_active">Usuario Activo</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="edit_is_admin" name="is_admin">
+                                <label class="form-check-label" for="edit_is_admin">Es Administrador</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="edit_is_advisor" name="is_advisor">
+                                <label class="form-check-label" for="edit_is_advisor">Es Asesor</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Inicializar tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+
+function editUser(id, firstName, lastName, email, phone, isActive, isAdmin, isAdvisor, userGroup, tags) {
+    document.getElementById('edit_user_id').value = id;
+    document.getElementById('edit_first_name').value = firstName;
+    document.getElementById('edit_last_name').value = lastName;
+    document.getElementById('edit_email').value = email;
+    document.getElementById('edit_phone').value = phone || '';
+    document.getElementById('edit_user_group').value = userGroup || '';
+    document.getElementById('edit_tags').value = tags || '';
+    document.getElementById('edit_is_active').checked = isActive === 'true' || isActive === true;
+    document.getElementById('edit_is_admin').checked = isAdmin === 'true' || isAdmin === true;
+    document.getElementById('edit_is_advisor').checked = isAdvisor === 'true' || isAdvisor === true;
+    document.getElementById('editUserForm').action = `/admin/users/${id}/update`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+    modal.show();
+}
+
+function deleteUser(id, name) {
+    if (confirm(`¿Estás seguro de eliminar al usuario "${name}"?\n\nEsta acción no se puede deshacer.`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/users/${id}/delete`;
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
 {% endblock %}
-
-
-
