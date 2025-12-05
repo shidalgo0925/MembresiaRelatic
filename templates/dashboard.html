@@ -9,7 +9,7 @@
         <div class="row align-items-center">
             <div class="col-md-6">
                 <div class="d-flex align-items-center">
-                    <img src="{{ url_for('static', filename='images/logo-relatic.svg') }}" alt="RELATIC" height="32" class="me-3">
+                    <img src="{{ url_for('static', filename=get_system_logo()) }}" alt="RELATIC" height="32" class="me-3" onerror="this.src='{{ url_for('static', filename='images/logo-relatic.svg') }}';">
                     <nav class="dashboard-nav">
                         <a href="{{ url_for('dashboard') }}" class="dashboard-nav-link active">Inicio</a>
                         <a href="{{ url_for('services') }}" class="dashboard-nav-link">Contenido</a>

@@ -133,20 +133,28 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if registration.registration_status == 'pending' %}
-                                <form method="POST" action="{{ url_for('admin_events.confirm_event_registration', event_id=event.id, registration_id=registration.id) }}" class="d-inline">
-                                    <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('¿Confirmar el registro de {{ registration.user.first_name }} {{ registration.user.last_name }}?');">
-                                        <i class="fas fa-check"></i> Confirmar
-                                    </button>
-                                </form>
-                                {% elif registration.registration_status == 'confirmed' %}
-                                <span class="text-success">
-                                    <i class="fas fa-check-circle"></i> Confirmado
-                                    {% if registration.confirmation_email_sent %}
-                                    <br><small class="text-muted">Email enviado</small>
+                                <div class="btn-group btn-group-sm">
+                                    {% if registration.registration_status == 'pending' %}
+                                    <form method="POST" action="{{ url_for('admin_events.confirm_event_registration', event_id=event.id, registration_id=registration.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-success" onclick="return confirm('¿Confirmar el registro de {{ registration.user.first_name }} {{ registration.user.last_name }}?');" title="Confirmar">
+                                            <i class="fas fa-check"></i> Confirmar
+                                        </button>
+                                    </form>
+                                    {% elif registration.registration_status == 'confirmed' %}
+                                    <span class="text-success me-2">
+                                        <i class="fas fa-check-circle"></i> Confirmado
+                                        {% if registration.confirmation_email_sent %}
+                                        <br><small class="text-muted">Email enviado</small>
+                                        {% endif %}
+                                    </span>
                                     {% endif %}
-                                </span>
-                                {% endif %}
+                                    
+                                    <form method="POST" action="{{ url_for('admin_events.delete_event_registration', event_id=event.id, registration_id=registration.id) }}" class="d-inline" onsubmit="return confirm('¿Estás seguro de eliminar el registro de {{ registration.user.first_name }} {{ registration.user.last_name }}? Esta acción no se puede deshacer.');">
+                                        <button type="submit" class="btn btn-danger" title="Eliminar">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}

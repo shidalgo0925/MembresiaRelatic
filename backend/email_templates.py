@@ -5,6 +5,7 @@ Sistema de templates HTML para diferentes tipos de notificaciones
 """
 
 from datetime import datetime
+from flask import render_template, request
 
 def get_email_template_base():
     """Template base HTML para todos los correos"""
@@ -388,32 +389,95 @@ def get_appointment_reminder_email(appointment, user, advisor, hours_before=24):
 
 
 def get_welcome_email(user):
-    """Template para email de bienvenida"""
-    content = f"""
-        <h2>¡Bienvenido a RelaticPanama!</h2>
-        <p>Hola <strong>{user.first_name} {user.last_name}</strong>,</p>
-        <p>Te damos la bienvenida a RelaticPanama, la Red Latinoamericana de Investigaciones Cualitativas.</p>
+    """Template para email de bienvenida usando el nuevo template HTML"""
+    try:
+        # Importar get_public_image_url desde app
+        from app import get_public_image_url, app
+        import os
+        from flask import has_request_context, request
         
-        <div class="info-box">
-            <h3 style="margin-top: 0;">¿Qué puedes hacer ahora?</h3>
-            <ul>
-                <li>Explorar nuestros eventos y cursos</li>
-                <li>Acceder a recursos exclusivos</li>
-                <li>Conectar con otros investigadores</li>
-                <li>Gestionar tu membresía</li>
-            </ul>
-        </div>
+        # Generar URLs absolutas (necesarias para emails)
+        # Verificar si el logo existe en la ubicación esperada
+        logo_path_png = os.path.join(os.path.dirname(__file__), '..', 'static', 'public', 'emails', 'logos', 'logo-relatic.png')
+        logo_path_svg = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'logo-relatic.svg')
         
-        <p>Estamos aquí para apoyarte en tu investigación cualitativa.</p>
-        <p style="text-align: center;">
-            <a href="https://relaticpanama.org/dashboard" class="button">Ir a mi Dashboard</a>
-        </p>
-    """
-    return get_email_template_base().format(
-        subject="Bienvenido a RelaticPanama",
-        content=content,
-        year=datetime.now().year
-    )
+        # Obtener base_url - usar request si está disponible, sino usar variable de entorno o default
+        if has_request_context() and request:
+            base_url = request.url_root.rstrip('/')
+        else:
+            base_url = os.getenv('BASE_URL', 'https://miembros.relatic.org')
+        
+        if os.path.exists(logo_path_png):
+            # Usar logo PNG de la carpeta pública
+            try:
+                logo_url = get_public_image_url('emails/logos/logo-relatic.png', absolute=True)
+            except Exception as e:
+                # Si falla get_public_image_url (por falta de contexto), construir manualmente
+                logo_url = f"{base_url}/static/public/emails/logos/logo-relatic.png"
+        elif os.path.exists(logo_path_svg):
+            # Fallback: usar logo SVG existente (convertir a URL absoluta)
+            logo_url = f"{base_url}/static/images/logo-relatic.svg"
+            print("⚠️ Usando logo SVG existente. Para mejor compatibilidad con emails, convierte a PNG y colócalo en static/public/emails/logos/logo-relatic.png")
+        else:
+            # No hay logo disponible
+            logo_url = None
+            print("⚠️ Logo no encontrado. Coloca logo-relatic.png en static/public/emails/logos/")
+        
+        login_url = f"{base_url}/login"
+        
+        # Renderizar el nuevo template HTML - usar app_context si no hay request context
+        if has_request_context():
+            html = render_template('emails/sistema/bienvenida.html',
+                                  logo_url=logo_url,
+                                  user_first_name=user.first_name,
+                                  user_last_name=user.last_name,
+                                  login_url=login_url,
+                                  base_url=base_url,
+                                  year=datetime.now().year,
+                                  contact_email='administracion@relaticpanama.org')
+        else:
+            # Si no hay request context, usar app_context
+            with app.app_context():
+                html = render_template('emails/sistema/bienvenida.html',
+                                      logo_url=logo_url,
+                                      user_first_name=user.first_name,
+                                      user_last_name=user.last_name,
+                                      login_url=login_url,
+                                      base_url=base_url,
+                                      year=datetime.now().year,
+                                      contact_email='administracion@relaticpanama.org')
+        
+        return html
+    except Exception as e:
+        # Fallback al template anterior si hay error
+        import traceback
+        traceback.print_exc()
+        print(f"⚠️ Error al cargar template de bienvenida: {e}")
+        content = f"""
+            <h2>¡Bienvenido a RelaticPanama!</h2>
+            <p>Hola <strong>{user.first_name} {user.last_name}</strong>,</p>
+            <p>Te damos la bienvenida a RelaticPanama, la Red Latinoamericana de Investigaciones Cualitativas.</p>
+            
+            <div class="info-box">
+                <h3 style="margin-top: 0;">¿Qué puedes hacer ahora?</h3>
+                <ul>
+                    <li>Explorar nuestros eventos y cursos</li>
+                    <li>Acceder a recursos exclusivos</li>
+                    <li>Conectar con otros investigadores</li>
+                    <li>Gestionar tu membresía</li>
+                </ul>
+            </div>
+            
+            <p>Estamos aquí para apoyarte en tu investigación cualitativa.</p>
+            <p style="text-align: center;">
+                <a href="https://miembros.relatic.org/login" class="button">Ir a mi Dashboard</a>
+            </p>
+        """
+        return get_email_template_base().format(
+            subject="Bienvenido a RelaticPanama",
+            content=content,
+            year=datetime.now().year
+        )
 
 
 def get_password_reset_email(user, reset_token, reset_url):

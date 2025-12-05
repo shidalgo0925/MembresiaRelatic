@@ -64,6 +64,10 @@ class EmailService:
         
         last_error = None
         
+        # Obtener remitente por defecto si no se especifica
+        if not sender:
+            sender = self.mail.app.config.get('MAIL_DEFAULT_SENDER', 'noreply@relaticpanama.org') if hasattr(self.mail, 'app') else 'noreply@relaticpanama.org'
+        
         for attempt in range(self.max_retries):
             try:
                 msg = Message(
@@ -88,20 +92,34 @@ class EmailService:
                             elif not recipient_id:
                                 user = User.query.filter_by(email=recipient_email).first()
                             
-                            email_log = EmailLog(
-                                recipient_id=user.id if user else None,
-                                recipient_email=recipient_email,
-                                recipient_name=recipient_name or (f"{user.first_name} {user.last_name}" if user else recipient_email),
-                                subject=subject,
-                                html_content=html_content[:5000],  # Limitar tamaño
-                                text_content=text_content[:5000] if text_content else None,
-                                email_type=email_type or 'general',
-                                related_entity_type=related_entity_type,
-                                related_entity_id=related_entity_id,
-                                status='sent',
-                                retry_count=attempt,
-                                sent_at=datetime.utcnow()
-                            )
+                            # Obtener remitente de la configuración
+                            from_email = sender or (self.mail.app.config.get('MAIL_DEFAULT_SENDER', 'noreply@relaticpanama.org') if hasattr(self.mail, 'app') else 'noreply@relaticpanama.org')
+                            
+                            # Crear diccionario con datos del email log
+                            email_log_data = {
+                                'from_email': from_email,
+                                'recipient_id': user.id if user else None,
+                                'recipient_email': recipient_email,
+                                'recipient_name': recipient_name or (f"{user.first_name} {user.last_name}" if user else recipient_email),
+                                'subject': subject,
+                                'html_content': html_content[:5000],  # Limitar tamaño
+                                'text_content': text_content[:5000] if text_content else None,
+                                'email_type': email_type or 'general',
+                                'related_entity_type': related_entity_type,
+                                'related_entity_id': related_entity_id,
+                                'status': 'sent',
+                                'retry_count': attempt,
+                                'sent_at': datetime.utcnow()
+                            }
+                            
+                            # Si la tabla tiene to_email, agregarlo
+                            from sqlalchemy import inspect
+                            inspector = inspect(db.engine)
+                            columns = [c['name'] for c in inspector.get_columns('email_log')]
+                            if 'to_email' in columns:
+                                email_log_data['to_email'] = recipient_email
+                            
+                            email_log = EmailLog(**email_log_data)
                             db.session.add(email_log)
                         db.session.commit()
                     except Exception as log_error:
@@ -130,21 +148,35 @@ class EmailService:
                                 elif not recipient_id:
                                     user = User.query.filter_by(email=recipient_email).first()
                                 
-                                email_log = EmailLog(
-                                    recipient_id=user.id if user else None,
-                                    recipient_email=recipient_email,
-                                    recipient_name=recipient_name or (f"{user.first_name} {user.last_name}" if user else recipient_email),
-                                    subject=subject,
-                                    html_content=html_content[:5000],
-                                    text_content=text_content[:5000] if text_content else None,
-                                    email_type=email_type or 'general',
-                                    related_entity_type=related_entity_type,
-                                    related_entity_id=related_entity_id,
-                                    status='failed',
-                                    error_message=last_error[:1000],  # Limitar tamaño
-                                    retry_count=attempt + 1,
-                                    sent_at=None
-                                )
+                                # Obtener remitente de la configuración
+                                from_email = sender or (self.mail.app.config.get('MAIL_DEFAULT_SENDER', 'noreply@relaticpanama.org') if hasattr(self.mail, 'app') else 'noreply@relaticpanama.org')
+                                
+                                # Crear diccionario con datos del email log
+                                email_log_data = {
+                                    'from_email': from_email,
+                                    'recipient_id': user.id if user else None,
+                                    'recipient_email': recipient_email,
+                                    'recipient_name': recipient_name or (f"{user.first_name} {user.last_name}" if user else recipient_email),
+                                    'subject': subject,
+                                    'html_content': html_content[:5000],
+                                    'text_content': text_content[:5000] if text_content else None,
+                                    'email_type': email_type or 'general',
+                                    'related_entity_type': related_entity_type,
+                                    'related_entity_id': related_entity_id,
+                                    'status': 'failed',
+                                    'error_message': last_error[:1000],  # Limitar tamaño
+                                    'retry_count': attempt + 1,
+                                    'sent_at': None
+                                }
+                                
+                                # Si la tabla tiene to_email, agregarlo
+                                from sqlalchemy import inspect
+                                inspector = inspect(db.engine)
+                                columns = [c['name'] for c in inspector.get_columns('email_log')]
+                                if 'to_email' in columns:
+                                    email_log_data['to_email'] = recipient_email
+                                
+                                email_log = EmailLog(**email_log_data)
                                 db.session.add(email_log)
                             db.session.commit()
                         except Exception as log_error:

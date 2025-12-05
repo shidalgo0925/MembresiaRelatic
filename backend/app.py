@@ -12,7 +12,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 import os
 import secrets
-import stripe
+try:
+    import stripe
+except ImportError:
+    stripe = None
+    print("⚠️ Stripe no está instalado. Funcionalidad de pagos no disponible.")
 from flask_mail import Mail, Message
 try:
     from email_service import EmailService
@@ -44,15 +48,20 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///relaticpanama.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Configuración de Stripe
-stripe.api_key = os.getenv('STRIPE_SECRET_KEY', 'sk_test_your_stripe_secret_key_here')
-STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', 'pk_test_your_stripe_publishable_key_here')
+if stripe:
+    stripe.api_key = os.getenv('STRIPE_SECRET_KEY', 'sk_test_your_stripe_secret_key_here')
+    STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', 'pk_test_your_stripe_publishable_key_here')
+else:
+    STRIPE_PUBLISHABLE_KEY = None
 
 # Configuración de Mail (valores por defecto, se pueden sobrescribir desde BD)
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', 'your_email@gmail.com')
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', 'your_app_password')
+# Configurado para Microsoft Office 365 por defecto
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.office365.com')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', '587'))
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
+app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'False').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', '')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', '')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'noreply@relaticpanama.org')
 
 # Inicialización de extensiones
@@ -89,6 +98,100 @@ if EMAIL_TEMPLATES_AVAILABLE:
     email_service = EmailService(mail)
 else:
     email_service = None
+
+# Aplicar configuración de email desde BD al iniciar (si las tablas ya existen)
+# Usar before_request en lugar de before_first_request (deprecado en Flask 2.2+)
+_email_config_initialized = False
+
+@app.before_request
+def initialize_email_config():
+    """Aplicar configuración de email al iniciar la aplicación (solo una vez)"""
+    global _email_config_initialized
+    if not _email_config_initialized:
+        try:
+            apply_email_config_from_db()
+            _email_config_initialized = True
+        except Exception as e:
+            print(f"⚠️ No se pudo inicializar configuración de email: {e}")
+            import traceback
+            traceback.print_exc()
+
+# Helper function para obtener el logo del sistema
+def get_system_logo():
+    """
+    Obtener URL del logo del sistema
+    Busca primero en static/public/emails/logos/, luego en static/images/
+    
+    Returns:
+        URL relativa del logo (para usar con url_for o directamente)
+    """
+    import os
+    
+    # Buscar en la nueva ubicación (prioridad)
+    logo_dir_public = os.path.join(os.path.dirname(__file__), '..', 'static', 'public', 'emails', 'logos')
+    logo_path_png = os.path.join(logo_dir_public, 'logo-relatic.png')
+    logo_path_svg = os.path.join(logo_dir_public, 'logo-relatic.svg')
+    
+    if os.path.exists(logo_path_png):
+        return 'public/emails/logos/logo-relatic.png'
+    elif os.path.exists(logo_path_svg):
+        return 'public/emails/logos/logo-relatic.svg'
+    
+    # Fallback a ubicación antigua
+    logo_dir_old = os.path.join(os.path.dirname(__file__), '..', 'static', 'images')
+    logo_path_old = os.path.join(logo_dir_old, 'logo-relatic.svg')
+    
+    if os.path.exists(logo_path_old):
+        return 'images/logo-relatic.svg'
+    
+    # Si no existe ninguno, retornar la ruta por defecto
+    return 'images/logo-relatic.svg'
+
+# Context processor para hacer get_system_logo disponible en todos los templates
+@app.context_processor
+def inject_logo():
+    """Inyectar función para obtener logo en todos los templates"""
+    return dict(get_system_logo=get_system_logo)
+
+# Helper function para URLs de imágenes públicas
+def get_public_image_url(filename, absolute=True):
+    """
+    Obtener URL de imagen pública desde static/public/
+    
+    Args:
+        filename: Ruta relativa desde static/public/ 
+                 (ej: 'emails/logos/logo-relatic.png')
+        absolute: Si True, retorna URL absoluta (necesario para emails)
+                 Si False, retorna URL relativa (para páginas web)
+    
+    Returns:
+        URL completa de la imagen
+        
+    Ejemplo:
+        # Para emails (URL absoluta)
+        logo_url = get_public_image_url('emails/logos/logo-relatic.png', absolute=True)
+        # → https://miembros.relatic.org/static/public/emails/logos/logo-relatic.png
+        
+        # Para páginas web (URL relativa)
+        logo_url = get_public_image_url('emails/logos/logo-relatic.png', absolute=False)
+        # → /static/public/emails/logos/logo-relatic.png
+    """
+    from flask import url_for, request
+    
+    # Generar URL relativa usando url_for
+    relative_url = url_for('static', filename=f'public/{filename}')
+    
+    if absolute:
+        # Para emails necesitamos URL absoluta
+        # Intentar obtener base URL del request, si no está disponible usar variable de entorno
+        if request and hasattr(request, 'url_root'):
+            base_url = request.url_root.rstrip('/')
+        else:
+            # Fallback: usar variable de entorno o valor por defecto
+            base_url = os.getenv('BASE_URL', 'https://miembros.relatic.org')
+        return f"{base_url}{relative_url}"
+    
+    return relative_url
 
 # Modelos de la base de datos
 class User(UserMixin, db.Model):
@@ -515,6 +618,7 @@ class Notification(db.Model):
 class EmailLog(db.Model):
     """Registro completo de todos los emails enviados por el sistema"""
     id = db.Column(db.Integer, primary_key=True)
+    from_email = db.Column(db.String(200))  # Email del remitente
     recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # NULL si es email externo
     recipient_email = db.Column(db.String(120), nullable=False)  # Email del destinatario
     recipient_name = db.Column(db.String(200))  # Nombre del destinatario
@@ -1044,9 +1148,13 @@ def register():
         
         # Enviar notificación de bienvenida
         try:
+            # Asegurar que la configuración de email esté actualizada
+            apply_email_config_from_db()
             NotificationEngine.notify_welcome(user)
         except Exception as e:
-            print(f"Error enviando notificación de bienvenida: {e}")
+            print(f"❌ Error enviando notificación de bienvenida: {e}")
+            import traceback
+            traceback.print_exc()
         
         flash('Registro exitoso. Por favor, inicia sesión.', 'success')
         return redirect(url_for('login'))
@@ -1281,7 +1389,7 @@ def checkout(membership_type):
     return render_template('checkout.html', 
                          membership_type=membership_type,
                          amount=amount,
-                         stripe_publishable_key=STRIPE_PUBLISHABLE_KEY)
+                         stripe_publishable_key=STRIPE_PUBLISHABLE_KEY if stripe else None)
 
 @app.route('/create-payment-intent', methods=['POST'])
 @login_required
@@ -2050,9 +2158,30 @@ class NotificationEngine:
             )
             db.session.add(notification)
             
-            if EMAIL_TEMPLATES_AVAILABLE and email_service:
+            # Verificar si email_service está disponible
+            if not EMAIL_TEMPLATES_AVAILABLE:
+                print(f"⚠️ EMAIL_TEMPLATES_AVAILABLE es False. No se enviará correo a {user.email}")
+                db.session.commit()
+                return
+            
+            if not email_service:
+                print(f"⚠️ email_service es None. No se enviará correo a {user.email}")
+                db.session.commit()
+                return
+            
+            # Generar HTML del email
+            try:
                 html_content = get_welcome_email(user)
-                email_service.send_email(
+            except Exception as e:
+                print(f"❌ Error al generar template de bienvenida: {e}")
+                import traceback
+                traceback.print_exc()
+                db.session.commit()  # Guardar notificación aunque falle el email
+                return
+            
+            # Enviar email
+            try:
+                success = email_service.send_email(
                     subject='Bienvenido a RelaticPanama',
                     recipients=[user.email],
                     html_content=html_content,
@@ -2062,12 +2191,23 @@ class NotificationEngine:
                     recipient_id=user.id,
                     recipient_name=f"{user.first_name} {user.last_name}"
                 )
-                notification.email_sent = True
-                notification.email_sent_at = datetime.utcnow()
+                
+                if success:
+                    notification.email_sent = True
+                    notification.email_sent_at = datetime.utcnow()
+                    print(f"✅ Email de bienvenida enviado exitosamente a {user.email}")
+                else:
+                    print(f"❌ Error al enviar email de bienvenida a {user.email}")
+            except Exception as e:
+                print(f"❌ Error al enviar email de bienvenida: {e}")
+                import traceback
+                traceback.print_exc()
             
             db.session.commit()
         except Exception as e:
-            print(f"Error en notify_welcome: {e}")
+            print(f"❌ Error en notify_welcome: {e}")
+            import traceback
+            traceback.print_exc()
             db.session.rollback()
     
     @staticmethod
@@ -2864,6 +3004,427 @@ def api_email_test():
             'error': f'Error al enviar correo de prueba: {str(e)}'
         }), 500
 
+@app.route('/api/admin/email/test-welcome', methods=['POST'])
+@admin_required
+def api_email_test_welcome():
+    """API para probar el template de bienvenida"""
+    data = request.get_json()
+    test_email = data.get('email', current_user.email)
+    
+    try:
+        # Crear usuario de prueba
+        class MockUser:
+            def __init__(self, email):
+                self.id = 1
+                self.first_name = "Juan"
+                self.last_name = "Pérez"
+                self.email = email
+        
+        user = MockUser(test_email)
+        
+        # Generar HTML del template de bienvenida
+        html_content = get_welcome_email(user)
+        
+        # Enviar email de prueba
+        from flask_mail import Message
+        msg = Message(
+            subject='[Prueba] Email de Bienvenida - RelaticPanama',
+            recipients=[test_email],
+            html=html_content
+        )
+        mail.send(msg)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Email de bienvenida de prueba enviado exitosamente a {test_email}'
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'Error al enviar email de prueba: {str(e)}'
+        }), 500
+
+@app.route('/api/admin/email/preview/<template_key>', methods=['GET'])
+@admin_required
+def api_email_preview_template(template_key):
+    """API para previsualizar cualquier template de email sin enviarlo"""
+    try:
+        # Crear datos de prueba según el tipo de template
+        class MockUser:
+            def __init__(self):
+                self.id = 1
+                self.first_name = "Juan"
+                self.last_name = "Pérez"
+                self.email = "juan.perez@example.com"
+        
+        class MockPayment:
+            def __init__(self):
+                self.membership_type = "pro"
+                self.amount = 60.00
+                self.created_at = datetime.utcnow()
+        
+        class MockSubscription:
+            def __init__(self):
+                self.membership_type = "pro"
+                self.start_date = datetime.utcnow()
+                self.end_date = datetime.utcnow() + timedelta(days=365)
+        
+        class MockEvent:
+            def __init__(self):
+                self.title = "Congreso de Investigación Cualitativa 2025"
+                self.start_date = datetime.utcnow() + timedelta(days=30)
+                self.end_date = datetime.utcnow() + timedelta(days=31)
+                self.start_time = "09:00"
+                self.id = 1
+                self.currency = "USD"
+                self.slug = "congreso-investigacion-2025"
+        
+        class MockRegistration:
+            def __init__(self):
+                self.registration_status = "confirmed"
+                self.final_price = 50.00
+        
+        class MockAppointment:
+            def __init__(self):
+                self.appointment_type = type('obj', (object,), {'name': 'Asesoría en Revisión de Artículos'})()
+                self.start_datetime = datetime.utcnow() + timedelta(days=7)
+                self.duration_minutes = 60
+                self.is_virtual = True
+                self.meeting_url = "https://meet.google.com/abc-defg-hij"
+                self.notes = "Preparar preguntas sobre metodología"
+        
+        class MockAdvisor:
+            def __init__(self):
+                self.first_name = "María"
+                self.last_name = "González"
+                self.specializations = "Investigación cualitativa, revisión de artículos"
+        
+        user = MockUser()
+        
+        # Generar HTML según el template_key
+        if template_key == 'welcome':
+            html_content = get_welcome_email(user)
+        elif template_key == 'membership_payment':
+            payment = MockPayment()
+            subscription = MockSubscription()
+            html_content = get_membership_payment_confirmation_email(user, payment, subscription)
+        elif template_key == 'membership_expiring':
+            subscription = MockSubscription()
+            html_content = get_membership_expiring_email(user, subscription, days_left=7)
+        elif template_key == 'membership_expired':
+            subscription = MockSubscription()
+            html_content = get_membership_expired_email(user, subscription)
+        elif template_key == 'membership_renewed':
+            subscription = MockSubscription()
+            html_content = get_membership_renewed_email(user, subscription)
+        elif template_key == 'event_registration':
+            event = MockEvent()
+            registration = MockRegistration()
+            try:
+                # Intentar usar el template HTML nuevo primero
+                from flask import render_template
+                from app import get_public_image_url
+                import os
+                
+                logo_path_png = os.path.join(os.path.dirname(__file__), '..', 'static', 'public', 'emails', 'logos', 'logo-relatic.png')
+                logo_path_svg = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'logo-relatic.svg')
+                base_url = request.url_root.rstrip('/') if request else 'https://miembros.relatic.org'
+                
+                if os.path.exists(logo_path_png):
+                    logo_url = get_public_image_url('emails/logos/logo-relatic.png', absolute=True)
+                elif os.path.exists(logo_path_svg):
+                    logo_url = f"{base_url}/static/images/logo-relatic.svg"
+                else:
+                    logo_url = None
+                
+                html_content = render_template('emails/eventos/registro_evento.html',
+                                              logo_url=logo_url,
+                                              user_first_name=user.first_name,
+                                              user_last_name=user.last_name,
+                                              event_title=event.title,
+                                              event_category="Congreso",
+                                              event_start_date=event.start_date.strftime('%d de %B de %Y'),
+                                              event_end_date=event.end_date.strftime('%d de %B de %Y'),
+                                              event_format="Virtual",
+                                              event_location=None,
+                                              event_price=registration.final_price,
+                                              event_currency=event.currency,
+                                              event_description="Congreso internacional de investigación cualitativa",
+                                              event_registration_url=None,
+                                              event_detail_url=f"{base_url}/events/{event.slug}",
+                                              event_has_certificate=True,
+                                              discount_applied=False,
+                                              base_url=base_url,
+                                              year=datetime.now().year,
+                                              contact_email='administracion@relaticpanama.org')
+            except Exception as e:
+                # Fallback al template antiguo si el nuevo falla
+                html_content = get_event_registration_email(event, user, registration)
+        elif template_key == 'event_cancellation':
+            event = MockEvent()
+            html_content = get_event_cancellation_email(event, user)
+        elif template_key == 'event_update':
+            event = MockEvent()
+            html_content = get_event_update_email(event, user, changes=["Fecha actualizada", "Nueva ubicación"])
+        elif template_key == 'appointment_confirmation':
+            appointment = MockAppointment()
+            advisor = MockAdvisor()
+            try:
+                # Usar el template HTML nuevo
+                from flask import render_template
+                from app import get_public_image_url
+                import os
+                
+                logo_path_png = os.path.join(os.path.dirname(__file__), '..', 'static', 'public', 'emails', 'logos', 'logo-relatic.png')
+                logo_path_svg = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'logo-relatic.svg')
+                base_url = request.url_root.rstrip('/') if request else 'https://miembros.relatic.org'
+                
+                if os.path.exists(logo_path_png):
+                    logo_url = get_public_image_url('emails/logos/logo-relatic.png', absolute=True)
+                elif os.path.exists(logo_path_svg):
+                    logo_url = f"{base_url}/static/images/logo-relatic.svg"
+                else:
+                    logo_url = None
+                
+                html_content = render_template('emails/eventos/confirmacion_cita.html',
+                                              logo_url=logo_url,
+                                              user_first_name=user.first_name,
+                                              user_last_name=user.last_name,
+                                              appointment_type=appointment.appointment_type.name,
+                                              appointment_date=appointment.start_datetime.strftime('%d de %B de %Y'),
+                                              appointment_time=appointment.start_datetime.strftime('%H:%M'),
+                                              appointment_duration=appointment.duration_minutes,
+                                              appointment_format='Virtual' if appointment.is_virtual else 'Presencial',
+                                              advisor_name=f"{advisor.first_name} {advisor.last_name}",
+                                              advisor_specialization=advisor.specializations,
+                                              meeting_url=appointment.meeting_url,
+                                              appointment_notes=appointment.notes,
+                                              appointments_url=f"{base_url}/appointments",
+                                              base_url=base_url,
+                                              year=datetime.now().year,
+                                              contact_email='administracion@relaticpanama.org')
+            except Exception as e:
+                # Fallback al template antiguo si el nuevo falla
+                html_content = get_appointment_confirmation_email(appointment, user, advisor)
+        elif template_key == 'appointment_reminder':
+            appointment = MockAppointment()
+            advisor = MockAdvisor()
+            try:
+                # Usar el template HTML nuevo
+                from flask import render_template
+                from app import get_public_image_url
+                import os
+                
+                logo_path_png = os.path.join(os.path.dirname(__file__), '..', 'static', 'public', 'emails', 'logos', 'logo-relatic.png')
+                logo_path_svg = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'logo-relatic.svg')
+                base_url = request.url_root.rstrip('/') if request else 'https://miembros.relatic.org'
+                
+                if os.path.exists(logo_path_png):
+                    logo_url = get_public_image_url('emails/logos/logo-relatic.png', absolute=True)
+                elif os.path.exists(logo_path_svg):
+                    logo_url = f"{base_url}/static/images/logo-relatic.svg"
+                else:
+                    logo_url = None
+                
+                html_content = render_template('emails/eventos/recordatorio_cita.html',
+                                              logo_url=logo_url,
+                                              user_first_name=user.first_name,
+                                              user_last_name=user.last_name,
+                                              appointment_type=appointment.appointment_type.name,
+                                              appointment_date=appointment.start_datetime.strftime('%d de %B de %Y'),
+                                              appointment_time=appointment.start_datetime.strftime('%H:%M'),
+                                              appointment_duration=appointment.duration_minutes,
+                                              appointment_format='Virtual' if appointment.is_virtual else 'Presencial',
+                                              advisor_name=f"{advisor.first_name} {advisor.last_name}",
+                                              advisor_specialization=advisor.specializations,
+                                              meeting_url=appointment.meeting_url,
+                                              appointment_notes=appointment.notes,
+                                              hours_until=24,
+                                              appointments_url=f"{base_url}/appointments",
+                                              base_url=base_url,
+                                              year=datetime.now().year,
+                                              contact_email='administracion@relaticpanama.org')
+            except Exception as e:
+                # Fallback al template antiguo si el nuevo falla
+                html_content = get_appointment_reminder_email(appointment, user, advisor, hours_before=24)
+        elif template_key == 'password_reset':
+            reset_token = "abc123xyz"
+            reset_url = f"{request.url_root.rstrip('/')}/reset-password?token={reset_token}"
+            html_content = get_password_reset_email(user, reset_token, reset_url)
+        else:
+            return jsonify({
+                'success': False,
+                'error': f'Template "{template_key}" no encontrado'
+            }), 404
+        
+        return html_content, 200, {'Content-Type': 'text/html; charset=utf-8'}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'Error al generar preview: {str(e)}'
+        }), 500
+
+# Mantener ruta antigua para compatibilidad
+@app.route('/api/admin/email/preview-welcome', methods=['GET'])
+@admin_required
+def api_email_preview_welcome():
+    """API para previsualizar el template de bienvenida sin enviarlo (compatibilidad)"""
+    return api_email_preview_template('welcome')
+
+@app.route('/api/admin/email/upload-logo', methods=['POST'])
+@admin_required
+def api_upload_logo():
+    """API para subir el logo para emails"""
+    try:
+        from werkzeug.utils import secure_filename
+        
+        if 'logo_file' not in request.files:
+            return jsonify({
+                'success': False,
+                'error': 'No se proporcionó archivo'
+            }), 400
+        
+        file = request.files['logo_file']
+        
+        if file.filename == '':
+            return jsonify({
+                'success': False,
+                'error': 'No se seleccionó ningún archivo'
+            }), 400
+        
+        if not allowed_file(file.filename):
+            return jsonify({
+                'success': False,
+                'error': 'Formato de archivo no permitido. Use PNG, JPG o SVG'
+            }), 400
+        
+        # Verificar tamaño (máximo 500KB)
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)
+        
+        if file_size > 500 * 1024:  # 500KB
+            return jsonify({
+                'success': False,
+                'error': 'El archivo es demasiado grande. Máximo 500KB'
+            }), 400
+        
+        # Crear directorio si no existe
+        logo_dir = os.path.join(os.path.dirname(__file__), '..', 'static', 'public', 'emails', 'logos')
+        os.makedirs(logo_dir, exist_ok=True)
+        
+        # Guardar como logo-relatic.png (convertir SVG a PNG si es necesario)
+        filename = secure_filename(file.filename)
+        ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+        
+        # Si es SVG, mantener como SVG, pero recomendamos PNG
+        if ext == 'svg':
+            logo_path = os.path.join(logo_dir, 'logo-relatic.svg')
+            file.save(logo_path)
+            logo_url = get_public_image_url('emails/logos/logo-relatic.svg', absolute=True)
+            # También copiar a ubicación antigua para compatibilidad
+            old_logo_path = os.path.join(os.path.dirname(__file__), '..', 'static', 'images', 'logo-relatic.svg')
+            try:
+                import shutil
+                os.makedirs(os.path.dirname(old_logo_path), exist_ok=True)
+                shutil.copy2(logo_path, old_logo_path)
+            except Exception as e:
+                print(f"⚠️ No se pudo copiar logo a ubicación antigua: {e}")
+        else:
+            # Para PNG, JPG, etc., guardar como PNG
+            logo_path = os.path.join(logo_dir, 'logo-relatic.png')
+            file.save(logo_path)
+            logo_url = get_public_image_url('emails/logos/logo-relatic.png', absolute=True)
+            # También copiar a ubicación antigua para compatibilidad
+            old_logo_dir = os.path.join(os.path.dirname(__file__), '..', 'static', 'images')
+            os.makedirs(old_logo_dir, exist_ok=True)
+            try:
+                import shutil
+                # Copiar PNG también a images/ para compatibilidad
+                old_logo_path_png = os.path.join(old_logo_dir, 'logo-relatic.png')
+                shutil.copy2(logo_path, old_logo_path_png)
+            except Exception as e:
+                print(f"⚠️ No se pudo copiar logo a ubicación antigua: {e}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Logo subido exitosamente y disponible en todo el sistema',
+            'logo_url': logo_url
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'Error al subir logo: {str(e)}'
+        }), 500
+
+@app.route('/api/admin/email/delete-logo', methods=['POST'])
+@admin_required
+def api_delete_logo():
+    """API para eliminar el logo"""
+    try:
+        logo_dir = os.path.join(os.path.dirname(__file__), '..', 'static', 'public', 'emails', 'logos')
+        logo_path_png = os.path.join(logo_dir, 'logo-relatic.png')
+        logo_path_svg = os.path.join(logo_dir, 'logo-relatic.svg')
+        
+        deleted = False
+        if os.path.exists(logo_path_png):
+            os.remove(logo_path_png)
+            deleted = True
+        if os.path.exists(logo_path_svg):
+            os.remove(logo_path_svg)
+            deleted = True
+        
+        if deleted:
+            return jsonify({
+                'success': True,
+                'message': 'Logo eliminado exitosamente'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'No se encontró logo para eliminar'
+            }), 404
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Error al eliminar logo: {str(e)}'
+        }), 500
+
+@app.route('/api/admin/email/logo-status', methods=['GET'])
+@admin_required
+def api_logo_status():
+    """API para verificar si existe el logo"""
+    try:
+        logo_dir = os.path.join(os.path.dirname(__file__), '..', 'static', 'public', 'emails', 'logos')
+        logo_path_png = os.path.join(logo_dir, 'logo-relatic.png')
+        logo_path_svg = os.path.join(logo_dir, 'logo-relatic.svg')
+        
+        logo_exists = os.path.exists(logo_path_png) or os.path.exists(logo_path_svg)
+        
+        logo_url = None
+        if logo_exists:
+            if os.path.exists(logo_path_png):
+                logo_url = get_public_image_url('emails/logos/logo-relatic.png', absolute=True)
+            elif os.path.exists(logo_path_svg):
+                logo_url = get_public_image_url('emails/logos/logo-relatic.svg', absolute=True)
+        
+        return jsonify({
+            'success': True,
+            'logo_exists': logo_exists,
+            'logo_url': logo_url
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Error al verificar logo: {str(e)}'
+        }), 500
+
 @app.route('/api/admin/email/templates')
 @admin_required
 def api_email_templates():
@@ -3096,6 +3657,7 @@ def ensure_email_log_columns():
         
         # Definir todas las columnas que debería tener según el modelo EmailLog
         required_columns = {
+            'from_email': 'VARCHAR(200)',
             'recipient_id': 'INTEGER',
             'recipient_email': 'VARCHAR(120)',
             'recipient_name': 'VARCHAR(200)',

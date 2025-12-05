@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenido a RELATIC Panamá</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #f5f6f7; 
+            margin: 0; 
+            padding: 0; 
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: #ffffff;
+            border-radius: 8px; 
+            overflow: hidden; 
+            border: 1px solid #e2e2e2;
+        }
+        .header {
+            background: linear-gradient(135deg, #0039ef 0%, #0a2a43 100%); 
+            padding: 30px 25px; 
+            color: #ffffff;
+            display: flex; 
+            align-items: center; 
+            gap: 20px;
+        }
+        .header img { 
+            width: 90px; 
+            height: auto;
+            display: block;
+        }
+        .header .title { 
+            font-size: 26px; 
+            font-weight: bold;
+            flex: 1;
+        }
+        .content { 
+            padding: 30px; 
+            color: #333333; 
+        }
+        .content h2 {
+            color: #0039ef;
+            margin-top: 0;
+            font-size: 24px;
+        }
+        .content h3 {
+            color: #0a2a43;
+            font-size: 18px;
+            margin-top: 25px;
+        }
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #ffc433;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        .info-box ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .info-box li {
+            margin-bottom: 8px;
+            color: #555;
+        }
+        .btn {
+            display: inline-block; 
+            margin-top: 20px; 
+            padding: 14px 30px;
+            background: #0039ef; 
+            color: #ffffff !important;
+            text-decoration: none; 
+            border-radius: 5px; 
+            font-weight: bold;
+            text-align: center;
+        }
+        .btn:hover {
+            background: #0028b8;
+        }
+        .footer { 
+            text-align: center; 
+            font-size: 12px; 
+            padding: 20px; 
+            color: #666; 
+            background: #f0f0f0; 
+            border-top: 1px solid #e2e2e2;
+        }
+        .footer a {
+            color: #0039ef;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            {% if logo_url %}
+            <img src="{{ logo_url }}" alt="Logo RELATIC Panamá" style="width: 90px; height: auto; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            {% endif %}
+            <div class="title" {% if not logo_url %}style="width: 100%; text-align: center;"{% endif %}>RELATIC PANAMÁ</div>
+        </div>
+        <div class="content">
+            <h2>¡Bienvenido(a) al Portal!</h2>
+            <p>Hola <strong>{{ user_first_name }} {{ user_last_name }}</strong>,</p>
+            <p>
+                Tu registro se ha completado exitosamente. Ahora puedes acceder a todas las funciones de nuestra plataforma.
+            </p>
+            
+            <div class="info-box">
+                <h3 style="margin-top: 0;">¿Qué puedes hacer ahora?</h3>
+                <ul>
+                    <li>Explorar nuestros eventos y cursos</li>
+                    <li>Acceder a recursos exclusivos</li>
+                    <li>Conectar con otros investigadores</li>
+                    <li>Gestionar tu membresía</li>
+                </ul>
+            </div>
+            
+            <p>Estamos aquí para apoyarte en tu investigación cualitativa.</p>
+            
+            <div style="text-align: center;">
+                <a href="{{ login_url }}" class="btn">Ingresar al Portal</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>© {{ year }} RELATIC Panamá – Todos los derechos reservados.</p>
+            <p>
+                <a href="{{ base_url }}">Visitar sitio web</a> | 
+                <a href="mailto:administracion@relaticpanama.org">Contacto</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+

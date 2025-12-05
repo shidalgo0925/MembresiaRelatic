@@ -440,6 +440,46 @@ def confirm_event_registration(event_id, registration_id):
     return redirect(request.referrer or url_for('admin_events.admin_events_index'))
 
 
+@admin_events_bp.route('/<int:event_id>/registrations/<int:registration_id>/delete', methods=['POST'])
+@admin_required
+def delete_event_registration(event_id, registration_id):
+    """Eliminar completamente un registro de participante de un evento"""
+    ensure_models()
+    event = Event.query.get_or_404(event_id)
+    registration = EventRegistration.query.get_or_404(registration_id)
+    user = registration.user
+    
+    if registration.event_id != event.id:
+        flash('El registro no corresponde a este evento.', 'error')
+        return redirect(url_for('admin_events.admin_events_index'))
+    
+    # Guardar información para el log
+    user_name = f"{user.first_name} {user.last_name}"
+    user_email = user.email
+    was_confirmed = registration.registration_status == 'confirmed'
+    
+    # Actualizar contador si el registro estaba confirmado
+    if was_confirmed and event.registered_count and event.registered_count > 0:
+        event.registered_count -= 1
+    
+    # Eliminar el registro
+    db.session.delete(registration)
+    
+    # Log de actividad
+    ActivityLog.log_activity(
+        current_user.id,
+        'delete_event_registration',
+        'event',
+        event.id,
+        f'Registro eliminado: {user_name} ({user_email}) - {event.title}',
+        request
+    )
+    
+    db.session.commit()
+    flash(f'Registro de {user_name} eliminado exitosamente.', 'info')
+    return redirect(url_for('admin_events.event_registrations', event_id=event.id))
+
+
 # ------------------------------------------------------------------------------
 # API pública
 # ------------------------------------------------------------------------------

@@ -518,3 +518,4 @@ Para problemas o preguntas:
 **RelaticPanama** - Sistema de Gestión de Emails v1.0  
 **Última actualización:** Diciembre 2025
 
+

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recordatorio de Cita - {{ appointment_type }}</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #f5f6f7; 
+            margin: 0; 
+            padding: 0; 
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: #ffffff;
+            border-radius: 8px; 
+            overflow: hidden; 
+            border: 1px solid #e2e2e2;
+        }
+        .header {
+            background: linear-gradient(135deg, #ffc433 0%, #0039ef 100%); 
+            padding: 30px 25px; 
+            color: #ffffff;
+            text-align: center;
+        }
+        .header img { 
+            width: 90px; 
+            height: auto;
+            margin-bottom: 15px;
+        }
+        .header .title { 
+            font-size: 24px; 
+            font-weight: bold;
+            margin: 0;
+        }
+        .content { 
+            padding: 30px; 
+            color: #333333; 
+        }
+        .content h2 {
+            color: #0a2a43;
+            margin-top: 0;
+            font-size: 22px;
+        }
+        .reminder-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        .reminder-box strong {
+            color: #0a2a43;
+            font-size: 18px;
+        }
+        .appointment-info {
+            background: #f8f9fa;
+            border-left: 4px solid #ffc433;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        .appointment-info-item {
+            margin: 12px 0;
+            display: flex;
+            align-items: start;
+        }
+        .appointment-info-item strong {
+            color: #0a2a43;
+            min-width: 140px;
+            display: inline-block;
+        }
+        .appointment-info-item span {
+            color: #555;
+        }
+        .advisor-box {
+            background: #e8f5e9;
+            border: 2px solid #4caf50;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .advisor-box strong {
+            color: #2e7d32;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .meeting-link {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .meeting-link a {
+            color: #0039ef;
+            font-weight: bold;
+            word-break: break-all;
+        }
+        .btn {
+            display: inline-block; 
+            margin-top: 20px; 
+            padding: 14px 30px;
+            background: #0039ef; 
+            color: #ffffff !important;
+            text-decoration: none; 
+            border-radius: 5px; 
+            font-weight: bold;
+            text-align: center;
+        }
+        .btn:hover {
+            background: #0028b8;
+        }
+        .footer { 
+            text-align: center; 
+            font-size: 12px; 
+            padding: 20px; 
+            color: #666; 
+            background: #f0f0f0; 
+            border-top: 1px solid #e2e2e2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="{{ logo_url }}" alt="Logo RELATIC Panamá">
+            <div class="title">Recordatorio de Cita</div>
+        </div>
+        <div class="content">
+            <h2>Recordatorio: Tu cita está próxima</h2>
+            <p>Hola <strong>{{ user_first_name }} {{ user_last_name }}</strong>,</p>
+            
+            <div class="reminder-box">
+                <strong>⏰ Tu cita es en {{ hours_until }} horas</strong>
+            </div>
+            
+            <p>Te recordamos que tienes una cita programada:</p>
+            
+            <div class="appointment-info">
+                <div class="appointment-info-item">
+                    <strong>Tipo de Cita:</strong>
+                    <span>{{ appointment_type }}</span>
+                </div>
+                <div class="appointment-info-item">
+                    <strong>Fecha y Hora:</strong>
+                    <span>{{ appointment_date }} a las {{ appointment_time }}</span>
+                </div>
+                <div class="appointment-info-item">
+                    <strong>Duración:</strong>
+                    <span>{{ appointment_duration }} minutos</span>
+                </div>
+                <div class="appointment-info-item">
+                    <strong>Formato:</strong>
+                    <span>{{ appointment_format }}</span>
+                </div>
+            </div>
+            
+            <div class="advisor-box">
+                <strong>👤 Asesor:</strong>
+                <div>{{ advisor_name }}</div>
+                {% if advisor_specialization %}
+                <div style="font-size: 14px; color: #555; margin-top: 5px;">
+                    {{ advisor_specialization }}
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if meeting_url %}
+            <div class="meeting-link">
+                <strong>🔗 Enlace de la Reunión:</strong>
+                <div style="margin-top: 10px;">
+                    <a href="{{ meeting_url }}" target="_blank">{{ meeting_url }}</a>
+                </div>
+                <div style="margin-top: 10px; font-size: 12px; color: #555;">
+                    Guarda este enlace para acceder a tu cita.
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if appointment_notes %}
+            <div style="background: #f8f9fa; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                <strong>Notas:</strong>
+                <p style="color: #555; margin-top: 8px;">{{ appointment_notes }}</p>
+            </div>
+            {% endif %}
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <a href="{{ appointments_url }}" class="btn">Ver Detalles de la Cita</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>© {{ year }} RELATIC Panamá – Todos los derechos reservados.</p>
+            <p>
+                <a href="{{ base_url }}">Visitar sitio web</a> | 
+                <a href="mailto:{{ contact_email }}">Contacto</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+
+

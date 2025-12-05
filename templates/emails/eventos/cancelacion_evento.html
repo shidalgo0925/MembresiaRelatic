@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cancelación de Registro - {{ event_title }}</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #f5f6f7; 
+            margin: 0; 
+            padding: 0; 
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: #ffffff;
+            border-radius: 8px; 
+            overflow: hidden; 
+            border: 1px solid #e2e2e2;
+        }
+        .header {
+            background: linear-gradient(135deg, #0a2a43 0%, #280f4c 100%); 
+            padding: 30px 25px; 
+            color: #ffffff;
+            text-align: center;
+        }
+        .header img { 
+            width: 90px; 
+            height: auto;
+            margin-bottom: 15px;
+        }
+        .header .title { 
+            font-size: 24px; 
+            font-weight: bold;
+            margin: 0;
+        }
+        .content { 
+            padding: 30px; 
+            color: #333333; 
+        }
+        .content h2 {
+            color: #0a2a43;
+            margin-top: 0;
+            font-size: 22px;
+        }
+        .info-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        .event-info {
+            background: #f8f9fa;
+            border-left: 4px solid #ffc433;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        .event-info-item {
+            margin: 10px 0;
+            display: flex;
+            align-items: start;
+        }
+        .event-info-item strong {
+            color: #0a2a43;
+            min-width: 100px;
+            display: inline-block;
+        }
+        .event-info-item span {
+            color: #555;
+        }
+        .btn {
+            display: inline-block; 
+            margin-top: 20px; 
+            padding: 14px 30px;
+            background: #0039ef; 
+            color: #ffffff !important;
+            text-decoration: none; 
+            border-radius: 5px; 
+            font-weight: bold;
+            text-align: center;
+        }
+        .btn:hover {
+            background: #0028b8;
+        }
+        .footer { 
+            text-align: center; 
+            font-size: 12px; 
+            padding: 20px; 
+            color: #666; 
+            background: #f0f0f0; 
+            border-top: 1px solid #e2e2e2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="{{ logo_url }}" alt="Logo RELATIC Panamá">
+            <div class="title">Cancelación de Registro</div>
+        </div>
+        <div class="content">
+            <h2>Registro Cancelado</h2>
+            <p>Hola <strong>{{ user_first_name }} {{ user_last_name }}</strong>,</p>
+            <p>
+                Te confirmamos que tu registro al evento <strong>{{ event_title }}</strong> ha sido cancelado.
+            </p>
+            
+            <div class="info-box">
+                <strong>⚠️ Importante:</strong> Si cambias de opinión, puedes volver a registrarte mientras haya cupos disponibles.
+            </div>
+            
+            <div class="event-info">
+                <div class="event-info-item">
+                    <strong>Evento:</strong>
+                    <span>{{ event_title }}</span>
+                </div>
+                <div class="event-info-item">
+                    <strong>Fecha:</strong>
+                    <span>{{ event_start_date }} - {{ event_end_date }}</span>
+                </div>
+                {% if cancellation_reason %}
+                <div class="event-info-item">
+                    <strong>Motivo:</strong>
+                    <span>{{ cancellation_reason }}</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <p>Esperamos verte en futuros eventos de RELATIC Panamá.</p>
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <a href="{{ events_list_url }}" class="btn">Ver Otros Eventos</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>© {{ year }} RELATIC Panamá – Todos los derechos reservados.</p>
+            <p>
+                <a href="{{ base_url }}">Visitar sitio web</a> | 
+                <a href="mailto:{{ contact_email }}">Contacto</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+
+

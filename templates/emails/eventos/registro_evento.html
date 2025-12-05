@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmación de Registro - {{ event_title }}</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #f5f6f7; 
+            margin: 0; 
+            padding: 0; 
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: #ffffff;
+            border-radius: 8px; 
+            overflow: hidden; 
+            border: 1px solid #e2e2e2;
+        }
+        .header {
+            background: linear-gradient(135deg, #0039ef 0%, #0a2a43 100%); 
+            padding: 30px 25px; 
+            color: #ffffff;
+            text-align: center;
+        }
+        .header img { 
+            width: 90px; 
+            height: auto;
+            margin-bottom: 15px;
+        }
+        .header .title { 
+            font-size: 24px; 
+            font-weight: bold;
+            margin: 0;
+        }
+        .content { 
+            padding: 30px; 
+            color: #333333; 
+        }
+        .content h2 {
+            color: #0039ef;
+            margin-top: 0;
+            font-size: 22px;
+        }
+        .event-info {
+            background: #f8f9fa;
+            border-left: 4px solid #ffc433;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        .event-info-item {
+            margin: 10px 0;
+            display: flex;
+            align-items: start;
+        }
+        .event-info-item strong {
+            color: #0a2a43;
+            min-width: 100px;
+            display: inline-block;
+        }
+        .event-info-item span {
+            color: #555;
+        }
+        .price-box {
+            background: #e8f5e9;
+            border: 2px solid #4caf50;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .price-box .price {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2e7d32;
+        }
+        .btn {
+            display: inline-block; 
+            margin-top: 20px; 
+            padding: 14px 30px;
+            background: #0039ef; 
+            color: #ffffff !important;
+            text-decoration: none; 
+            border-radius: 5px; 
+            font-weight: bold;
+            text-align: center;
+        }
+        .btn:hover {
+            background: #0028b8;
+        }
+        .footer { 
+            text-align: center; 
+            font-size: 12px; 
+            padding: 20px; 
+            color: #666; 
+            background: #f0f0f0; 
+            border-top: 1px solid #e2e2e2;
+        }
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            background: #ffc433;
+            color: #0a2a43;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="{{ logo_url }}" alt="Logo RELATIC Panamá">
+            <div class="title">Confirmación de Registro</div>
+        </div>
+        <div class="content">
+            <h2>¡Tu registro ha sido confirmado!</h2>
+            <p>Hola <strong>{{ user_first_name }} {{ user_last_name }}</strong>,</p>
+            <p>
+                Te confirmamos que tu registro al evento <strong>{{ event_title }}</strong> ha sido exitoso.
+            </p>
+            
+            <div class="event-info">
+                <div class="event-info-item">
+                    <strong>Evento:</strong>
+                    <span>{{ event_title }}</span>
+                </div>
+                <div class="event-info-item">
+                    <strong>Categoría:</strong>
+                    <span><span class="badge">{{ event_category }}</span></span>
+                </div>
+                <div class="event-info-item">
+                    <strong>Fecha:</strong>
+                    <span>{{ event_start_date }} - {{ event_end_date }}</span>
+                </div>
+                <div class="event-info-item">
+                    <strong>Formato:</strong>
+                    <span>{{ event_format }}</span>
+                </div>
+                {% if event_location %}
+                <div class="event-info-item">
+                    <strong>Ubicación:</strong>
+                    <span>{{ event_location }}</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if event_price > 0 %}
+            <div class="price-box">
+                <div style="color: #555; font-size: 14px;">Inversión</div>
+                <div class="price">{{ event_price }} {{ event_currency }}</div>
+                {% if discount_applied %}
+                <div style="color: #2e7d32; font-size: 12px; margin-top: 5px;">
+                    Descuento aplicado: {{ discount_amount }}
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="price-box" style="background: #e3f2fd; border-color: #2196f3;">
+                <div class="price" style="color: #1976d2;">Incluido en tu membresía</div>
+            </div>
+            {% endif %}
+            
+            {% if event_description %}
+            <p style="margin-top: 25px;"><strong>Descripción:</strong></p>
+            <p style="color: #555;">{{ event_description }}</p>
+            {% endif %}
+            
+            {% if event_registration_url %}
+            <div style="text-align: center; margin-top: 30px;">
+                <a href="{{ event_registration_url }}" class="btn">Ver Detalles del Evento</a>
+            </div>
+            {% else %}
+            <div style="text-align: center; margin-top: 30px;">
+                <a href="{{ event_detail_url }}" class="btn">Ver Detalles del Evento</a>
+            </div>
+            {% endif %}
+            
+            {% if event_has_certificate %}
+            <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-top: 25px; border-radius: 4px;">
+                <strong>📜 Certificado:</strong> Este evento incluye certificado digital. Recibirás más información próximamente.
+            </div>
+            {% endif %}
+        </div>
+        <div class="footer">
+            <p>© {{ year }} RELATIC Panamá – Todos los derechos reservados.</p>
+            <p>
+                <a href="{{ base_url }}">Visitar sitio web</a> | 
+                <a href="mailto:{{ contact_email }}">Contacto</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+
+
